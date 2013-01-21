@@ -1,0 +1,39 @@
+_apt_cyg_completion()
+{
+	local cur prev opts script_name
+	script_name="apt-cyg"
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	case ${prev} in
+		remove|update)
+			if [[ "${cur}" == "" ]] ; then
+				cur="."
+			fi
+			COMPREPLY=( $(compgen -W "`${script_name} show 2>/dev/null | grep ^${cur}`"))
+			return 0
+			;;
+		--help|--noupdate|--version)
+			return 0
+			;;
+		--file)
+			#COMPREPLY=( $(compgen -f ${cur}) )
+			_cd
+			return 0
+			;;
+		--cache)
+			COMPREPLY=( $(compgen -d ${cur}) )
+			return 0
+			;;
+		*)
+		;;
+	esac
+	if [[ ${cur} == -* ]] ; then
+		opts=`${script_name} --help | sed -ne "s/ //g; {/^--/p}" | awk -F, '{print $1}'`
+	else
+		opts=`${script_name} --help | sed -ne "s/\"//g; {/^\s\+apt-cyg/p}" | awk '{print $2}'`
+	fi
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+}
+complete -F _apt_cyg_completion apt-cyg
