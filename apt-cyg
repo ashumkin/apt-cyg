@@ -29,7 +29,7 @@ then
   echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
   exit 1
 fi
-
+APT_CYG="$0"
 
 function usage()
 {
@@ -382,7 +382,7 @@ case "$command" in
           echo Package $package is already installed, skipping
           continue
         fi
-        apt-cyg --noscripts install $package
+        "$APT_CYG" --noscripts install $package
         if ! test $? = 0 ; then warn=1; fi
       done
     fi
