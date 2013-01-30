@@ -30,6 +30,10 @@ then
   exit 1
 fi
 APT_CYG="$0"
+if test "${APT_CYG:0:1}" != "/"
+then
+	APT_CYG="$(pwd)/$APT_CYG"
+fi
 
 function usage()
 {
