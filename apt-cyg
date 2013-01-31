@@ -50,6 +50,7 @@ function usage()
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
   echo "  --force            : force install (for \"install\" only)"
+  echo "  --source           : install package sources"
   echo "  --noupdate, -u     : don't update setup.ini from mirror"
   echo "  --help"
   echo "  --version"
@@ -141,6 +142,7 @@ dofile=0
 command=""
 filepackages=""
 packages=""
+source=0
 
 while test $# -gt 0
 do
@@ -190,6 +192,11 @@ do
 
 	--force)
 		force=1
+		shift
+	;;
+
+	--source)
+		source=1
 		shift
 	;;
 
@@ -345,11 +352,21 @@ case "$command" in
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'` 
+    name='install'
+    out_lst="/etc/setup/$pkg.lst"
+    if test $source -ne 0
+    then
+        # if --source, take appropriate line for filename and checksum
+        name='source'
+        # and do not rewrite .lst file
+        out_lst=/dev/null
+    fi
+    # pick the latest version, which comes first
+    install=`cat "release/$pkg/desc" | awk "/^$name: / { print \\$2; exit }"`
 
     if test "-$install-" = "--"
     then
-      echo "Could not find \"install\" in package description: obsolete package?"
+      echo "Could not find \"$name\" in package description: obsolete package?"
       exit 1
     fi
 
@@ -358,7 +375,7 @@ case "$command" in
     wget -nc $mirror/$install
     
     # check the md5
-    digest=`cat "desc" | awk '/^install: / { print $4; exit }'` 
+    digest=`cat "desc" | awk "/^$name: / { print \\$4; exit }"`
     digactual=`md5sum $file | awk '{print $1}'`
     if ! test $digest = $digactual
     then
@@ -367,10 +384,15 @@ case "$command" in
     fi
     
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
-    gzip -f "/etc/setup/$pkg.lst"
+    cat $file | bunzip2 | tar > $out_lst xvf - -C /
     cd ../..
-    
+    if test $source -eq 0
+    then
+        gzip -f $out_lst
+    else
+        # exit if retrieve sources
+        exit
+    fi
     
     # update the package database
     
