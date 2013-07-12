@@ -486,3 +486,4 @@ case "$command" in
 
 esac
 
+# vim: set filetype=sh:
