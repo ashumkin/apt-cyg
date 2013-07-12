@@ -37,33 +37,37 @@ fi
 
 function usage()
 {
-  echo apt-cyg: Installs and removes Cygwin packages.
-  echo "  \"apt-cyg install <package names>\" to install packages"
-  echo "  \"apt-cyg remove <package names>\" to remove packages"
-  echo "  \"apt-cyg update\" to update setup.ini"
-  echo "  \"apt-cyg show\" to show installed packages"
-  echo "  \"apt-cyg find <patterns>\" to find packages matching patterns"
-  echo "  \"apt-cyg describe <patterns>\" to describe packages matching patterns"
-  echo "  \"apt-cyg packageof <commands or files>\" to locate parent packages"
-  echo "Options:"
-  echo "  --mirror, -m <url> : set mirror"
-  echo "  --cache, -c <dir>  : set cache"
-  echo "  --file, -f <file>  : read package names from file"
-  echo "  --force            : force install (for \"install\" only)"
-  echo "  --noupdate, -u     : don't update setup.ini from mirror"
-  echo "  --help"
-  echo "  --version"
+  cat <<EOF
+  apt-cyg: Installs and removes Cygwin packages.
+  "apt-cyg install <package names>" to install packages
+  "apt-cyg remove <package names>" to remove packages
+  "apt-cyg update" to update setup.ini
+  "apt-cyg show" to show installed packages
+  "apt-cyg find <patterns>" to find packages matching patterns
+  "apt-cyg describe <patterns>" to describe packages matching patterns
+  "apt-cyg packageof <commands or files>" to locate parent packages
+Options:
+  --mirror, -m <url> : set mirror
+  --cache, -c <dir>  : set cache
+  --file, -f <file>  : read package names from file
+  --force            : force install (for "install" only)
+  --noupdate, -u     : don't update setup.ini from mirror
+  --help
+  --version
+EOF
 }
 
 
 
 function version()
 {
-  echo "apt-cyg version 0.57"
-  echo "Written by Stephen Jungels"
-  echo ""
-  echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
-  echo "Copyright (c) 2013 Alexey Shumkin."
+  cat <<EOF
+apt-cyg version 0.57
+Written by Stephen Jungels
+
+Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
+Copyright (c) 2013 Alexey Shumkin.
+EOF
 }
 
 
