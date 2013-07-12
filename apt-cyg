@@ -52,8 +52,8 @@ Options:
   --file, -f <file>  : read package names from file
   --force            : force install (for "install" only)
   --noupdate, -u     : don't update setup.ini from mirror
-  --help
-  --version
+  --help             : show this help
+  --version          : show version info
 EOF
 }
 
@@ -62,7 +62,7 @@ EOF
 function version()
 {
   cat <<EOF
-apt-cyg version 0.57
+apt-cyg version 0.57.2
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
