@@ -49,6 +49,7 @@ function usage()
 Options:
   --mirror, -m <url> : set mirror
   --cache, -c <dir>  : set cache
+  --fetch            : fetch files only (not install)
   --file, -f <file>  : read package names from file
   --force            : force install (for "install" only)
   --noupdate, -u     : don't update setup.ini from mirror
@@ -136,22 +137,26 @@ function checkpackages()
 
 function fetch_and_install()
 {
+    fetch_only="$1"
     for pkg in $packages
     do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
-    if test $already -ge 1
+    if test "$fetch_only" -eq 0
     then
-      if test $force -eq 0
-      then
-          echo Package $pkg is already installed, skipping
-          continue
-      else
-          echo Package $pkg is already installed but forced reinstall
-      fi
+        already=`grep -c "^$pkg " /etc/setup/installed.db`
+        if test $already -ge 1
+        then
+          if test $force -eq 0
+          then
+              echo Package $pkg is already installed, skipping
+              continue
+          else
+              echo Package $pkg is already installed but forced reinstall
+          fi
+        fi
+        echo ""
     fi
-    echo ""
-    echo Installing $pkg
+    echo Fetching $pkg
 
     # look for package and save desc file
 
@@ -193,6 +198,11 @@ function fetch_and_install()
       exit 1
     fi
     
+    if test "$fetch_only" -eq 1
+    then
+        continue
+    fi
+
     echo "Unpacking..."
     cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
     gzip -f "/etc/setup/$pkg.lst"
@@ -257,6 +267,7 @@ function fetch_and_install()
 
 noscripts=0
 noupdate=0
+fetch_only=0
 file=""
 force=0
 dofile=0
@@ -296,6 +307,11 @@ do
     --version)
       version
       exit 0
+    ;;
+
+    --fetch)
+        fetch_only=1
+        shift
     ;;
 
     --file|-f)
@@ -430,7 +446,7 @@ case "$command" in
     checkpackages
     findworkspace
     getsetup
-    fetch_and_install 1
+    fetch_and_install $fetch_only
 
   ;;
 
