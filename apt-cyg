@@ -51,7 +51,7 @@ Options:
   --cache, -c <dir>  : set cache
   --fetch            : fetch files only (not install)
   --file, -f <file>  : read package names from file
-  --force            : force install (for "install" only)
+  --force, -F        : force install (for "install" only)
   --noupdate, -u     : don't update setup.ini from mirror
   --help             : show this help
   --version          : show version info
@@ -327,7 +327,7 @@ do
       shift
     ;;
 
-	--force)
+	--force|-F)
 		force=1
 		shift
 	;;
