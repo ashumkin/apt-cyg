@@ -166,7 +166,7 @@ function fetch_and_install()
     # look for package and save desc file
 
     pkg_dir="release/$pkg"
-    pkg_desc="release/$pkg/desc"
+    pkg_desc="/tmp/apt-cyg.$pkg.desc"
     mkdir -p "$pkg_dir"
     cat setup.ini | awk > "$pkg_desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
@@ -197,7 +197,7 @@ function fetch_and_install()
     wget -nc $mirror/$install
 
     # check the md5
-    digest=`cat "desc" | awk '/^install: / { print $4; exit }'`
+    digest=`cat "$pkg_desc" | awk '/^install: / { print $4; exit }'`
     digactual=`md5sum $file | awk '{print $1}'`
     if ! test "$digest" = "$digactual"
     then
