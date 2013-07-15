@@ -165,9 +165,7 @@ function fetch_and_install()
 
     # look for package and save desc file
 
-    pkg_dir="release/$pkg"
     pkg_desc="/tmp/apt-cyg.$pkg.desc"
-    mkdir -p "$pkg_dir"
     cat setup.ini | awk > "$pkg_desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}'
@@ -176,7 +174,7 @@ function fetch_and_install()
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting
-      rm -r "$pkg_dir"
+      rm "$pkg_desc"
       exit 1
     fi
     echo Found package $pkg
@@ -192,7 +190,9 @@ function fetch_and_install()
       exit 1
     fi
 
-    file=`basename $install`
+    pkg_dir=$(dirname "$install")
+    file=$(basename "$install")
+    mkdir -p "$pkg_dir"
     pushd "$pkg_dir" 1>/dev/null
     wget -nc $mirror/$install
 
@@ -267,6 +267,7 @@ function fetch_and_install()
     fi
 
     echo Package $pkg installed
+    rm "$pkg_desc"
 
     done
 }
