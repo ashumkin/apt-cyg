@@ -186,7 +186,7 @@ function fetch_and_install()
     fi
 
     file=`basename $install`
-    cd "release/$pkg"
+    pushd "release/$pkg" 1>/dev/null
     wget -nc $mirror/$install
 
     # check the md5
@@ -200,13 +200,14 @@ function fetch_and_install()
 
     if test "$fetch_only" -eq 1
     then
+        popd 1>/dev/null
         continue
     fi
 
     echo "Unpacking..."
     cat $file | bunzip2 | tar > "/etc/setup/$pkg.lst" xvf - -C /
     gzip -f "/etc/setup/$pkg.lst"
-    cd ../..
+    popd 1>/dev/null
 
 
     # update the package database
