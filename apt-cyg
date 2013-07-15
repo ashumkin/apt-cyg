@@ -135,6 +135,11 @@ function checkpackages()
   fi
 }
 
+function gen_tmp_awk()
+{
+    tmp_awk="/tmp/awk.$$"
+}
+
 function fetch_and_install()
 {
     fetch_only="$1"
@@ -160,16 +165,18 @@ function fetch_and_install()
 
     # look for package and save desc file
 
-    mkdir -p "release/$pkg"
-    cat setup.ini | awk > "release/$pkg/desc" -v package="$pkg" \
+    pkg_dir="release/$pkg"
+    pkg_desc="release/$pkg/desc"
+    mkdir -p "$pkg_dir"
+    cat setup.ini | awk > "$pkg_desc" -v package="$pkg" \
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}'
 
-    desc=`cat "release/$pkg/desc"`
+    desc=`cat "$pkg_desc"`
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting
-      rm -r "release/$pkg"
+      rm -r "$pkg_dir"
       exit 1
     fi
     echo Found package $pkg
@@ -177,7 +184,7 @@ function fetch_and_install()
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    install=`cat "release/$pkg/desc" | awk '/^install: / { print $2; exit }'`
+    install=`cat "$pkg_desc" | awk '/^install: / { print $2; exit }'`
 
     if test "-$install-" = "--"
     then
@@ -186,7 +193,7 @@ function fetch_and_install()
     fi
 
     file=`basename $install`
-    pushd "release/$pkg" 1>/dev/null
+    pushd "$pkg_dir" 1>/dev/null
     wget -nc $mirror/$install
 
     # check the md5
@@ -211,18 +218,18 @@ function fetch_and_install()
 
 
     # update the package database
-
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
+    gen_tmp_awk
+    cat /etc/setup/installed.db | awk > $tmp_awk -v pkg="$pkg" -v bz=$file \
       "BEGIN{ins=$already} {if (ins < 1 && pkg < \$1) {print pkg \" \" bz \" 0\"; ins=1}; print \$0} \
        END{if (ins < 1) print pkg \" \" bz \" 0\"}"
     mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
+    mv $tmp_awk /etc/setup/installed.db
 
 
     # recursively install required packages
 
-    echo > /tmp/awk.$$ '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}'
-    requires=`cat "release/$pkg/desc" | awk -f /tmp/awk.$$`
+    echo > $tmp_awk '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}'
+    requires=`cat "$pkg_desc" | awk -f $tmp_awk`
 
     warn=0
     if ! test "-$requires-" = "--"
@@ -493,9 +500,10 @@ case "$command" in
     cat "/etc/setup/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
     rm "/etc/setup/$pkg.lst.gz"
     rm -f /etc/postinstall/$pkg.sh.done
-    cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    gen_tmp_awk
+    cat /etc/setup/installed.db | awk > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
     mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv /tmp/awk.$$ /etc/setup/installed.db
+    mv $tmp_awk /etc/setup/installed.db
     echo Package $pkg removed
 
     done
