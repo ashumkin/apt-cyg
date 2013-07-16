@@ -436,7 +436,7 @@ case "$command" in
     do
       echo ""
       echo Searching for installed packages matching $pkg:
-      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" $INSTALLED_DB
+      awk -v query="$pkg" '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' $INSTALLED_DB
       echo ""
       echo Searching for installable packages matching $pkg:
       cat setup.ini | awk -v query="$pkg" \
