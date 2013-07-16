@@ -41,6 +41,7 @@ function usage()
   apt-cyg: Installs and removes Cygwin packages.
   "apt-cyg install <package names>" to install packages
   "apt-cyg remove <package names>" to remove packages
+  "apt-cyg outdated" to list outdated packages
   "apt-cyg update" to update setup.ini
   "apt-cyg show" to show installed packages
   "apt-cyg find <patterns>" to find packages matching patterns
@@ -150,6 +151,35 @@ function escape_package_name()
 function gen_tmp_awk()
 {
     tmp_awk="/tmp/awk.$$"
+}
+
+function listoutdated()
+{
+    file_installed=/tmp/apt-cyg.installed.$$_
+    file_available=/tmp/apt-cyg.available.$$_
+    show_installed_packages 1 >$file_installed
+    show_available_packages 1 >$file_available
+    packages_changed=$(diff -d -y $file_installed $file_available  | grep -e '|' | awk '{ print $1 }')
+    q_verbose="$1"
+    for pkg in $packages_changed
+    do
+        e_pkg="$(escape_package_name "$pkg")"
+        version_installed=$(cat $file_installed | awk "/^$e_pkg /"'{print $2}')
+        version_available=$(cat $file_available | awk "/^$e_pkg /"'{print $2}')
+        if test "$version_installed" \< "$version_available"
+        then
+            if test $q_verbose -eq 1
+            then
+                echo "Package $pkg is outdated ($version_installed < $version_available)"
+            else
+                echo $pkg
+            fi
+        elif test -z "$version_available"
+        then
+            echo "Warning: Package $pkg ($version_available)" >&2
+        fi
+    done
+    rm $file_installed $file_available
 }
 
 function fetch_and_install()
@@ -467,7 +497,7 @@ do
         shift; shift
     ;;
 
-    update|show|find|describe|packageof|install|remove)
+    outdated|update|show|find|describe|packageof|install|remove)
       if test "-$command-" = "--"
       then
         command=$1
@@ -504,6 +534,13 @@ fi
 
 
 case "$command" in
+
+  outdated)
+    findworkspace
+    getsetup
+    listoutdated $verbose
+
+  ;;
 
   update)
 
