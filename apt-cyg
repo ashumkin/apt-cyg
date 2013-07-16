@@ -95,8 +95,13 @@ function findworkspace()
 
   echo Working directory is $cache
   echo Mirror is $mirror
-  mkdir -p "$cache/$mirrordir"
-  cd "$cache/$mirrordir"
+  if mkdir -p "$cache/$mirrordir"
+  then
+      cd "$cache/$mirrordir"
+  else
+      echo Cannot create cache dir. Exiting... >&2
+      exit 1
+  fi
 }
 
 
