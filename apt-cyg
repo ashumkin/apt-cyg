@@ -134,7 +134,7 @@ function getsetup()
 
 function checkpackages()
 {
-  if test "-$packages-" = "--"
+  if test ${#packages[@]} == 0
   then
     echo Nothing to do, exiting
     exit 0
@@ -155,7 +155,7 @@ function gen_tmp_awk()
 function fetch_and_install()
 {
     fetch_only="$1"
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
 
     if test "$fetch_only" -eq 0
@@ -387,8 +387,7 @@ force=0
 verbose=0
 dofile=0
 command=""
-filepackages=""
-packages=""
+packages=()
 prefix=""
 
 # initialize SETUP_DIR and INSTALLED_DB
@@ -467,14 +466,14 @@ do
       then
         command=$1
       else
-        packages="$packages $1"
+        packages[${#packages[@]}]="$1"
       fi
       shift
 
     ;;
 
     *)
-      packages="$packages $1"
+      packages[${#packages[@]}]="$1"
       shift
 
     ;;
@@ -485,13 +484,16 @@ done
 
 if test $dofile = 1
 then
-  if test -f "$file"
+  if ! test -f "$file"
   then
-    filepackages="$filepackages `cat "$file" | awk '{printf "%s ", $0}'`"
+      echo File $file not found, skipping >&2
   else
-    echo File $file not found, skipping >&2
+      filepackages=$(< $file)
+      for f_file in ${filepackages[@]}
+      do
+          packages[${#packages[@]}]="$f_file"
+      done
   fi
-  packages="$packages $filepackages"
 fi
 
 
@@ -519,14 +521,14 @@ case "$command" in
     findworkspace
     getsetup
 
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       echo ""
       echo Searching for installed packages matching $pkg:
-      show_installed_packages $verbose $pkg
+      show_installed_packages $verbose "$pkg"
       echo ""
       echo Searching for installable packages matching $pkg:
-      show_available_packages $verbose $pkg
+      show_available_packages $verbose "$pkg"
     done
 
   ;;
@@ -537,7 +539,7 @@ case "$command" in
     checkpackages
     findworkspace
     getsetup
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       echo ""
       cat setup.ini | awk -v query="$pkg" \
@@ -555,7 +557,7 @@ case "$command" in
   packageof)
 
     checkpackages
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
       key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
       if test "-$key-" = "--"
@@ -589,7 +591,7 @@ case "$command" in
   remove)
 
     checkpackages
-    for pkg in $packages
+    for pkg in "${packages[@]}"
     do
 
     already=`grep -c "^$pkg " $INSTALLED_DB`
