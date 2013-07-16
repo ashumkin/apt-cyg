@@ -34,6 +34,7 @@ if test "${APT_CYG:0:1}" != "/"
 then
 	APT_CYG="$(pwd)/$APT_CYG"
 fi
+INSTALLED_DB=/etc/setup/installed.db
 
 function usage()
 {
@@ -153,7 +154,7 @@ function fetch_and_install()
 
     if test "$fetch_only" -eq 0
     then
-        already=`grep -c "^$pkg " /etc/setup/installed.db`
+        already=`grep -c "^$pkg " $INSTALLED_DB`
         if test $already -ge 1
         then
           if test $force -eq 0
@@ -224,11 +225,11 @@ function fetch_and_install()
 
     # update the package database
     gen_tmp_awk
-    cat /etc/setup/installed.db | awk > $tmp_awk -v pkg="$pkg" -v bz=$file \
+    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" -v bz=$file \
       "BEGIN{ins=$already} {if (ins < 1 && pkg < \$1) {print pkg \" \" bz \" 0\"; ins=1}; print \$0} \
        END{if (ins < 1) print pkg \" \" bz \" 0\"}"
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv $tmp_awk /etc/setup/installed.db
+    mv $INSTALLED_DB $INSTALLED_DB-save
+    mv $tmp_awk $INSTALLED_DB
 
 
     # recursively install required packages
@@ -243,7 +244,7 @@ function fetch_and_install()
       echo $requires
       for package in $requires
       do
-        already=`grep -c "^$package " /etc/setup/installed.db`
+        already=`grep -c "^$package " $INSTALLED_DB`
         if test $already -ge 1
         then
           echo Package $package is already installed, skipping
@@ -391,7 +392,7 @@ case "$command" in
   show)
 
     echo 1>&2 The following packages are installed:
-    cat /etc/setup/installed.db | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
+    cat $INSTALLED_DB | awk '/[^ ]+ [^ ]+ 0/ {print $1}'
 
   ;;
 
@@ -406,7 +407,7 @@ case "$command" in
     do
       echo ""
       echo Searching for installed packages matching $pkg:
-      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" /etc/setup/installed.db
+      awk '/[^ ]+ [^ ]+ 0/ {if ($1 ~ query) print $1}' query="$pkg" $INSTALLED_DB
       echo ""
       echo Searching for installable packages matching $pkg:
       cat setup.ini | awk -v query="$pkg" \
@@ -471,7 +472,7 @@ case "$command" in
     for pkg in $packages
     do
 
-    already=`grep -c "^$pkg " /etc/setup/installed.db`
+    already=`grep -c "^$pkg " $INSTALLED_DB`
     if test $already = 0
     then
       echo Package $pkg is not installed, skipping
@@ -507,9 +508,9 @@ case "$command" in
     rm "/etc/setup/$pkg.lst.gz"
     rm -f /etc/postinstall/$pkg.sh.done
     gen_tmp_awk
-    cat /etc/setup/installed.db | awk > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
-    mv /etc/setup/installed.db /etc/setup/installed.db-save
-    mv $tmp_awk /etc/setup/installed.db
+    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    mv $INSTALLED_DB $INSTALLED_DB-save
+    mv $tmp_awk $INSTALLED_DB
     echo Package $pkg removed
 
     done
