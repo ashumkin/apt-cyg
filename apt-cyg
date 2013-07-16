@@ -26,7 +26,7 @@ GAWK=`which awk 2> /dev/null`
 if test "-$WGET-" = "--" || test "-$BZIP2-" = "--" || test "-$TAR-" = "--" \
   || test "-$GAWK-" = "--"
 then
-  echo You must install wget, tar, gawk and bzip2 to use apt-cyg.
+  echo You must install wget, tar, gawk and bzip2 to use apt-cyg. >&2
   exit 1
 fi
 APT_CYG="$0"
@@ -170,10 +170,10 @@ function fetch_and_install()
       'BEGIN{RS="\n\n@ "; FS="\n"} {if ($1 == package) {desc = $0; px++}} \
        END {if (px == 1 && desc != "") print desc; else print "Package not found"}'
 
-    desc=`cat "$pkg_desc"`
+    desc=`< "$pkg_desc"`
     if test "-$desc-" = "-Package not found-"
     then
-      echo Package $pkg not found or ambiguous name, exiting
+      echo Package $pkg not found or ambiguous name, exiting >&2
       rm "$pkg_desc"
       exit 1
     fi
@@ -186,7 +186,7 @@ function fetch_and_install()
 
     if test "-$install-" = "--"
     then
-      echo "Could not find \"install\" in package description: obsolete package?"
+      echo "Could not find \"install\" in package description: obsolete package?" >&2
       exit 1
     fi
 
@@ -201,7 +201,7 @@ function fetch_and_install()
     digactual=`md5sum $file | awk '{print $1}'`
     if ! test "$digest" = "$digactual"
     then
-      echo MD5 sum did not match, exiting
+      echo MD5 sum did not match, exiting >&2
       exit 1
     fi
 
@@ -367,7 +367,7 @@ then
   then
     filepackages="$filepackages `cat "$file" | awk '{printf "%s ", $0}'`"
   else
-    echo File $file not found, skipping
+    echo File $file not found, skipping >&2
   fi
   packages="$packages $filepackages"
 fi
@@ -478,14 +478,14 @@ case "$command" in
     do
       if test "-$pkg-" = "-$req-"
       then
-        echo apt-cyg cannot remove package $pkg, exiting
+        echo apt-cyg cannot remove package $pkg, exiting >&2
         exit 1
       fi
     done
 
     if ! test -e "/etc/setup/$pkg.lst.gz"
     then
-      echo Package manifest missing, cannot remove $pkg.  Exiting
+      echo Package manifest missing, cannot remove $pkg. Exiting >&2
       exit 1
     fi
     echo Removing $pkg
