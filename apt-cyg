@@ -112,14 +112,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N $mirror/setup.bz2
+    wget -N ${wget_options//--no-clobber} $mirror/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N $mirror/setup.ini
+      wget -N ${wget_options//--no-clobber} $mirror/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -220,7 +220,7 @@ function fetch_and_install()
     file=$(basename "$install")
     mkdir -p "$pkg_dir"
     pushd "$pkg_dir" 1>/dev/null
-    wget -nc $mirror/$install
+    wget $wget_options $mirror/$install
 
     # check the md5
     digest=`cat "$pkg_desc" | awk '/^install: / { print $4; exit }'`
@@ -389,6 +389,7 @@ dofile=0
 command=""
 packages=()
 prefix=""
+wget_options="--no-clobber"
 
 # initialize SETUP_DIR and INSTALLED_DB
 init_vars
@@ -460,6 +461,11 @@ do
 		force=1
 		shift
 	;;
+
+    -w|--wget-options)
+        wget_options="$wget_options $2"
+        shift; shift
+    ;;
 
     update|show|find|describe|packageof|install|remove)
       if test "-$command-" = "--"
