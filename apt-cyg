@@ -49,6 +49,7 @@ function usage()
   echo "  --mirror, -m <url> : set mirror"
   echo "  --cache, -c <dir>  : set cache"
   echo "  --file, -f <file>  : read package names from file"
+  echo "  --force            : force install (for \"install\" only)"
   echo "  --noupdate, -u     : don't update setup.ini from mirror"
   echo "  --help"
   echo "  --version"
@@ -62,6 +63,7 @@ function version()
   echo "Written by Stephen Jungels"
   echo ""
   echo "Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL."
+  echo "Copyright (c) 2013 Alexey Shumkin."
 }
 
 
@@ -134,6 +136,7 @@ function checkpackages()
 noscripts=0
 noupdate=0
 file=""
+force=0
 dofile=0
 command=""
 filepackages=""
@@ -184,6 +187,11 @@ do
       fi
       shift
     ;;
+
+	--force)
+		force=1
+		shift
+	;;
 
     update|show|find|describe|packageof|install|remove)
       if test "-$command-" = "--"
@@ -307,8 +315,13 @@ case "$command" in
     already=`grep -c "^$pkg " /etc/setup/installed.db`
     if test $already -ge 1
     then
-      echo Package $pkg is already installed, skipping
-      continue
+	  if test $force -eq 0
+	  then
+		  echo Package $pkg is already installed, skipping
+		  continue
+	  else
+		  echo Package $pkg is already installed but forced reinstall
+	  fi
     fi
     echo ""
     echo Installing $pkg
@@ -362,8 +375,8 @@ case "$command" in
     # update the package database
     
     cat /etc/setup/installed.db | awk > /tmp/awk.$$ -v pkg="$pkg" -v bz=$file \
-      '{if (ins != 1 && pkg < $1) {print pkg " " bz " 0"; ins=1}; print $0} \
-       END{if (ins != 1) print pkg " " bz " 0"}'
+      "BEGIN{ins=$already} {if (ins < 1 && pkg < \$1) {print pkg \" \" bz \" 0\"; ins=1}; print \$0} \
+       END{if (ins < 1) print pkg \" \" bz \" 0\"}"
     mv /etc/setup/installed.db /etc/setup/installed.db-save
     mv /tmp/awk.$$ /etc/setup/installed.db
     
