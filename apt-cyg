@@ -43,6 +43,7 @@ function usage()
   "apt-cyg remove <package names>" to remove packages
   "apt-cyg outdated" to list outdated packages
   "apt-cyg update" to update setup.ini
+  "apt-cyg upgrade" to upgrade outdated packages
   "apt-cyg show" to show installed packages
   "apt-cyg find <patterns>" to find packages matching patterns
   "apt-cyg describe <patterns>" to describe packages matching patterns
@@ -275,15 +276,19 @@ function fetch_and_install()
 
     # update the package database
     gen_tmp_awk
-    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=$already \
+    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
       "{
-          if (ins < 1 && pkg < \$1) {
+          if (ins != 1 && pkg <= \$1) {
               print pkg \" \" bz \" 0\";
               ins=1
-          };
-          print \$0
+              if (pkg == \$1)
+                  noprint=1
+         };
+         if (!noprint)
+             print \$0;
+         noprint=0
       }
-      END { if (ins < 1) print pkg \" \" bz \" 0\"}"
+      END { if (ins != 1) print pkg \" \" bz \" 0\"}"
     mv $INSTALLED_DB $INSTALLED_DB-save
     mv $tmp_awk $INSTALLED_DB
 
@@ -387,6 +392,21 @@ function show_available_packages()
                 print
             }
         }' | sort | sed -e '/^_/{$!{H;d}}; $G' | sed -e '/^$/d'
+}
+
+function upgrade()
+{
+    file_outdated=/tmp/apt-cyg.outdated.$$
+    listoutdated 0 > $file_outdated
+    if test $fetch_only -eq 1
+    then
+        v_fetch="--fetch"
+    fi
+    for pkg in $(< $file_outdated)
+    do
+        "$APT_CYG" --prefix "$prefix" install --noupdate --force $v_fetch "$pkg"
+    done
+    rm $file_outdated
 }
 
 function init_vars()
@@ -497,7 +517,7 @@ do
         shift; shift
     ;;
 
-    outdated|update|show|find|describe|packageof|install|remove)
+    outdated|update|upgrade|show|find|describe|packageof|install|remove)
       if test "-$command-" = "--"
       then
         command=$1
@@ -549,6 +569,12 @@ case "$command" in
 
   ;;
 
+  upgrade)
+    findworkspace
+    getsetup
+    upgrade
+
+  ;;
 
   show)
 
