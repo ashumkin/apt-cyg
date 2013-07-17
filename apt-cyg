@@ -34,8 +34,6 @@ if test "${APT_CYG:0:1}" != "/"
 then
 	APT_CYG="$(pwd)/$APT_CYG"
 fi
-SETUP_DIR=/etc/setup
-INSTALLED_DB=$SETUP_DIR/installed.db
 
 function usage()
 {
@@ -49,14 +47,15 @@ function usage()
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
 Options:
-  --mirror, -m <url> : set mirror
-  --cache, -c <dir>  : set cache
-  --fetch            : fetch files only (not install)
-  --file, -f <file>  : read package names from file
-  --force, -F        : force install (for "install" only)
-  --noupdate, -u     : don't update setup.ini from mirror
-  --help             : show this help
-  --version          : show version info
+  --prefix, -p <prefix> : prefix to install packages to (for debug purposes; must be set first)
+  --mirror, -m <url>    : set mirror
+  --cache, -c <dir>     : set cache
+  --fetch               : fetch files only (not install)
+  --file, -f <file>     : read package names from file
+  --force, -F           : force install (for "install" only)
+  --noupdate, -u        : don't update setup.ini from mirror
+  --help                : show this help
+  --version             : show version info
 EOF
 }
 
@@ -219,7 +218,7 @@ function fetch_and_install()
     fi
 
     echo "Unpacking..."
-    cat $file | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C /
+    cat $file | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
     gzip -f "$SETUP_DIR/$pkg.lst"
     popd 1>/dev/null
 
@@ -251,7 +250,7 @@ function fetch_and_install()
           echo Package $package is already installed, skipping
           continue
         fi
-        "$APT_CYG" --noscripts install $package
+        "$APT_CYG" --prefix "$prefix" --noscripts install $package
         if ! test $? = 0 ; then warn=1; fi
       done
     fi
@@ -279,8 +278,26 @@ function fetch_and_install()
     done
 }
 
+function init_vars()
+{
+    SETUP_DIR=$prefix/etc/setup
+    if test -n "$prefix"
+    then
+        mkdir -p $SETUP_DIR
+    fi
+    INSTALLED_DB=$SETUP_DIR/installed.db
+}
+
 # process options
 
+# on Linux box emulate `cygpath`
+if ! which cygpath &>/dev/null
+then
+    function cygpath()
+    {
+        echo "$2"
+    }
+fi
 noscripts=0
 noupdate=0
 fetch_only=0
@@ -290,10 +307,21 @@ dofile=0
 command=""
 filepackages=""
 packages=""
+prefix=""
+
+# initialize SETUP_DIR and INSTALLED_DB
+init_vars
 
 while test $# -gt 0
 do
   case "$1" in
+
+    --prefix|-p)
+        prefix="$2"
+        # REinitialize SETUP_DIR and INSTALLED_DB
+        init_vars
+        shift; shift
+    ;;
 
     --mirror|-m)
       echo "$2" > $SETUP_DIR/last-mirror
