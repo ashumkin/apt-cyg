@@ -183,6 +183,14 @@ function listoutdated()
     rm $file_installed $file_available
 }
 
+function unpack()
+{
+    file="$1"
+    echo "Unpacking..."
+    cat "$file" | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
+    gzip -f "$SETUP_DIR/$pkg.lst"
+}
+
 function fetch_and_install()
 {
     fetch_only="$1"
@@ -268,9 +276,7 @@ function fetch_and_install()
         continue
     fi
 
-    echo "Unpacking..."
-    cat $file | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
-    gzip -f "$SETUP_DIR/$pkg.lst"
+    unpack "$file"
     popd 1>/dev/null
 
 
