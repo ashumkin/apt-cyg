@@ -75,6 +75,10 @@ Copyright (c) 2013 Alexey Shumkin.
 EOF
 }
 
+function convert_mirror_name()
+{
+    echo "$1" | sed -e "s/%3a/:/g" -e "s:%2f:/:g"
+}
 
 function findworkspace()
 {
@@ -95,6 +99,7 @@ function findworkspace()
   then
     mirror="`head -1 $SETUP_DIR/last-mirror`"
   fi
+  mirror=$(convert_mirror_name "$mirror")
   mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
 
   echo Working directory is $cache
@@ -488,7 +493,7 @@ do
     ;;
 
     --mirror|-m)
-      echo "$2" > $SETUP_DIR/last-mirror
+      convert_mirror_name "$2" > $SETUP_DIR/last-mirror
       shift ; shift
     ;;
 
