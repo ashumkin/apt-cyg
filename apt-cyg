@@ -191,6 +191,20 @@ function unpack()
     gzip -f "$SETUP_DIR/$pkg.lst"
 }
 
+function do_postinstall()
+{
+    pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
+    if test $pis -gt 0 && ! test $noscripts -eq 1
+    then
+      echo Running postinstall scripts
+      for script in /etc/postinstall/*.sh
+      do
+        $script
+        mv $script $script.done
+      done
+    fi
+}
+
 function fetch_and_install()
 {
     fetch_only="$1"
@@ -327,17 +341,7 @@ function fetch_and_install()
     fi
 
     # run all postinstall scripts
-
-    pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
-    if test $pis -gt 0 && ! test $noscripts -eq 1
-    then
-      echo Running postinstall scripts
-      for script in /etc/postinstall/*.sh
-      do
-        $script
-        mv $script $script.done
-      done
-    fi
+    do_postinstall
 
     echo Package $pkg installed
     rm "$pkg_desc"
