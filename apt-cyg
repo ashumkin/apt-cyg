@@ -40,6 +40,7 @@ function usage()
   cat <<EOF
   apt-cyg: Installs and removes Cygwin packages.
   "apt-cyg install <package names>" to install packages
+  "apt-cyg localinstall <package names>" to install packages from tars
   "apt-cyg remove <package names>" to remove packages
   "apt-cyg outdated" to list outdated packages
   "apt-cyg update" to update setup.ini
@@ -186,6 +187,14 @@ function listoutdated()
 function unpack()
 {
     file="$1"
+    # if localinstall
+    if test -n "$2"
+    then
+        # set pkg name from filename
+        pkg=$(basename "$pkg")
+        pkg=${pkg%.tar.bz2}
+        pkg=${pkg/%-[0-9]*}
+    fi
     echo "Unpacking..."
     cat "$file" | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
     gzip -f "$SETUP_DIR/$pkg.lst"
@@ -429,6 +438,19 @@ function init_vars()
     INSTALLED_DB=$SETUP_DIR/installed.db
 }
 
+function unpack_packages()
+{
+    for pkg in "${packages[@]}"
+    do
+        if ! test -f "$pkg"
+        then
+            echo Warning: File "$pkg" not found! Skipping >&2
+            continue
+        fi
+        unpack "$pkg" 1
+    done
+}
+
 # process options
 
 # on Linux box emulate `cygpath`
@@ -527,7 +549,7 @@ do
         shift; shift
     ;;
 
-    outdated|update|upgrade|show|find|describe|packageof|install|remove)
+    outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
       if test "-$command-" = "--"
       then
         command=$1
@@ -666,6 +688,12 @@ case "$command" in
 
   ;;
 
+  localinstall)
+    checkpackages
+    unpack_packages
+    do_postinstall
+
+  ;;
 
   remove)
 

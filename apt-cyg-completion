@@ -17,8 +17,8 @@ _apt_cyg_completion()
 		--help|--noupdate|--version)
 			return 0
 			;;
-		--file)
-			#COMPREPLY=( $(compgen -f ${cur}) )
+		--file|localinstall)
+			COMPREPLY=( $(compgen -f ${cur}) )
 			_cd
 			return 0
 			;;
