@@ -113,6 +113,22 @@ function findworkspace()
   fi
 }
 
+function getarchitecture()
+{
+  cygwinarch=$(uname -m)
+  case $cygwinarch in
+      "i686")
+      arch="x86"
+    ;;
+      "x86_64")
+      arch="x86_64"
+    ;;
+    *)
+      echo "Cannot determine cygwin architecture"
+      exit 1
+    ;;
+  esac
+}
 
 function getsetup()
 {
@@ -120,14 +136,14 @@ function getsetup()
   then
     touch setup.ini
     mv setup.ini setup.ini-save
-    wget -N ${wget_options//--no-clobber} $mirror/setup.bz2
+    wget -N ${wget_options//--no-clobber} $mirror/$arch/setup.bz2
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
       mv setup setup.ini
       echo Updated setup.ini
     else
-      wget -N ${wget_options//--no-clobber} $mirror/setup.ini
+      wget -N ${wget_options//--no-clobber} $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
         echo Updated setup.ini
@@ -480,6 +496,9 @@ wget_options="--no-clobber"
 
 # initialize SETUP_DIR and INSTALLED_DB
 init_vars
+
+# determine if cygwin runing in x86 or x86_64
+getarchitecture
 
 while test $# -gt 0
 do
