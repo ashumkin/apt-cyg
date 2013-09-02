@@ -37,6 +37,7 @@ Option | Description
 --file, -f <file> | read package names from file
 --force, -F | force install (for "install" only)
 --noupdate, -u | don't update setup.ini from mirror
+--exclude, -x <pattern> | exclude packages matched <pattern>
 --help | show this help
 --version | show version info
 

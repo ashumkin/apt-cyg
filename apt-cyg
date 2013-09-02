@@ -50,15 +50,16 @@ function usage()
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
 Options:
-  --prefix, -p <prefix> : prefix to install packages to (for debug purposes; must be set first)
-  --mirror, -m <url>    : set mirror
-  --cache, -c <dir>     : set cache
-  --fetch               : fetch files only (not install)
-  --file, -f <file>     : read package names from file
-  --force, -F           : force install (for "install" only)
-  --noupdate, -u        : don't update setup.ini from mirror
-  --help                : show this help
-  --version             : show version info
+  --prefix, -p <prefix>   : prefix to install packages to (for debug purposes; must be set first)
+  --mirror, -m <url>      : set mirror
+  --cache, -c <dir>       : set cache
+  --fetch                 : fetch files only (not install)
+  --file, -f <file>       : read package names from file
+  --force, -F             : force install (for "install" only)
+  --noupdate, -u          : don't update setup.ini from mirror
+  --exclude, -x <pattern> : exclude packages matched <pattern>
+  --help                  : show this help
+  --version               : show version info
 EOF
 }
 
@@ -442,7 +443,9 @@ function upgrade()
     then
         v_fetch="--fetch"
     fi
-    for pkg in $(< $file_outdated)
+    packages=($(< $file_outdated))
+    do_exclude_packages
+    for pkg in ${packages[@]}
     do
         "$APT_CYG" --prefix "$prefix" install --noupdate --force $v_fetch "$pkg"
     done
@@ -472,6 +475,30 @@ function unpack_packages()
     done
 }
 
+
+function array_contains_matched()
+{
+    local a
+    for a in "${@:2}"
+    do
+        [[ $1 =~ "$a" ]] && return 0
+    done
+    return 1
+}
+
+function do_exclude_packages()
+{
+    local c=0
+    for pkg in "${packages[@]}"
+    do
+        if array_contains_matched "$pkg" "${excluded_packages[@]}"
+        then
+            unset packages[$c]
+        fi
+        let c=c+1
+    done
+}
+
 # process options
 
 # on Linux box emulate `cygpath`
@@ -491,6 +518,7 @@ verbose=0
 dofile=0
 command=""
 packages=()
+excluded_packages=()
 prefix=""
 wget_options="--no-clobber"
 
@@ -568,6 +596,11 @@ do
 		shift
 	;;
 
+    --exclude|-x)
+        excluded_packages[${#excluded_packages[@]}]="$2"
+        shift; shift
+    ;;
+
     -w|--wget-options)
         wget_options="$wget_options $2"
         shift; shift
@@ -608,6 +641,7 @@ then
   fi
 fi
 
+do_exclude_packages
 
 case "$command" in
 
