@@ -44,6 +44,7 @@ Option | Description
 
 * Copyright:: 2005-9, Stephen Jungels
 * Copyright:: 2013, Alexey Shumkin
+* Copyright:: 2013, Denny Schäfer
 
 Licensed under the GPL Version 1.0
 

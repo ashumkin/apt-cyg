@@ -3,6 +3,8 @@
 # apt-cyg: install tool for cygwin similar to debian apt-get
 #
 # Copyright (C) 2005-9, Stephen Jungels
+# Copyright (C) 2013, Alexey Shumkin
+# Copyright (C) 2013, Denny Schäfer
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -82,6 +84,7 @@ Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
 Copyright (c) 2013 Alexey Shumkin.
+Copyright (c) 2013 Denny Schäfer.
 EOF
 }
 
