@@ -27,7 +27,7 @@ fi
 
 function check_dependencies
 {
-  DEPENDENCIES="wget bzip2 tar awk"
+  DEPENDENCIES="wget bzip2 xz tar awk"
 
   deps_ok=YES
   for dep in $DEPENDENCIES
@@ -219,16 +219,31 @@ function listoutdated()
 function unpack()
 {
     file="$1"
+
+    file_extension="${file##*.}"
+
+    case "$file_extension" in
+      xz)
+        format="xz"
+        unpack_tool="xzcat"
+      ;;
+      bz2)
+        format="bz2"
+        unpack_tool="bunzip2"
+      ;;
+    esac
+
     # if localinstall
     if test -n "$2"
     then
         # set pkg name from filename
         pkg=$(basename "$pkg")
-        pkg=${pkg%.tar.bz2}
+        pkg=${pkg%.tar.$format}
         pkg=${pkg/%-[0-9]*}
     fi
+
     echo "Unpacking..."
-    cat "$file" | bunzip2 | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
+    cat "$file" | $unpack_tool | tar > "$SETUP_DIR/$pkg.lst" xvf - -C $prefix/
     gzip -f "$SETUP_DIR/$pkg.lst"
 }
 
