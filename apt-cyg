@@ -23,7 +23,7 @@
 APT_CYG="$0"
 if test "${APT_CYG:0:1}" != "/"
 then
-	APT_CYG="$(pwd)/$APT_CYG"
+  APT_CYG="$(pwd)/$APT_CYG"
 fi
 
 function check_dependencies
