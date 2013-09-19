@@ -8,6 +8,7 @@ Install tool for cygwin similar to debian apt-get
 
 * wget
 * bzip2
+* xz
 * tar
 * (g)awk
 
