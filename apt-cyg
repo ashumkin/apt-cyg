@@ -200,8 +200,8 @@ function listoutdated()
     for pkg in $packages_changed
     do
         e_pkg="$(escape_package_name "$pkg")"
-        version_installed=$(cat $file_installed | awk "/^$e_pkg /"'{print $2}')
-        version_available=$(cat $file_available | awk "/^$e_pkg /"'{print $2}')
+        version_installed=$(awk "/^$e_pkg /"'{print $2}' $file_installed)
+        version_available=$(awk "/^$e_pkg /"'{print $2}' $file_available)
         if test "$version_installed" \< "$version_available"
         then
             if test $q_verbose -eq 1
@@ -289,7 +289,7 @@ function fetch_and_install()
     # look for package and save desc file
 
     pkg_desc="/tmp/apt-cyg.$pkg.desc"
-    cat setup.ini | awk > "$pkg_desc" -v package="$pkg" \
+    awk < setup.ini > "$pkg_desc" -v package="$pkg" \
       'BEGIN {
           RS="\n\n@ ";
           FS="\n"
@@ -319,7 +319,7 @@ function fetch_and_install()
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    install=`cat "$pkg_desc" | awk '/^install: / { print $2; exit }'`
+    install=`awk '/^install: / { print $2; exit }' "$pkg_desc"`
 
     if test "-$install-" = "--"
     then
@@ -334,7 +334,7 @@ function fetch_and_install()
     wget $wget_options $mirror/$install
 
     # check the md5
-    digest=`cat "$pkg_desc" | awk '/^install: / { print $4; exit }'`
+    digest=`awk '/^install: / { print $4; exit }' "$pkg_desc"`
     digactual=`md5sum $file | awk '{print $1}'`
     if ! test "$digest" = "$digactual"
     then
@@ -354,7 +354,7 @@ function fetch_and_install()
 
     # update the package database
     gen_tmp_awk
-    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
+    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
       "{
           if (ins != 1 && pkg <= \$1) {
               print pkg \" \" bz \" 0\";
@@ -372,9 +372,7 @@ function fetch_and_install()
 
 
     # recursively install required packages
-
-    echo > $tmp_awk '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}'
-    requires=`cat "$pkg_desc" | awk -f $tmp_awk`
+    requires=$(awk '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}' "$pkg_desc")
 
     warn=0
     if ! test "-$requires-" = "--"
@@ -414,7 +412,7 @@ function show_installed_packages()
     # remove ".tar.bz2" extension
     # print version (cut from "<pkg> <pkg>-version" string)
     # sort list (started with underscores are last)
-    cat $INSTALLED_DB | awk -v verbose=$q_verbose -v query="$query" \
+    awk < $INSTALLED_DB -v verbose=$q_verbose -v query="$query" \
         '/[^ ]+ [^ ]+ 0/ {
             if (length(query) == 0 || $1 ~ query ) {
                 NF=verbose+1;
@@ -436,7 +434,7 @@ function show_available_packages()
     query="$(escape_package_name "$2")"
     # print version (found "version:" field"
     # sort list (started with underscores are last)
-    cat setup.ini | awk -v query="$query" -v verbose=$q_verbose -v version_re="^version: " \
+    awk < setup.ini -v query="$query" -v verbose=$q_verbose -v version_re="^version: " \
         'BEGIN {
             RS="\n\n@ ";
             FS="\n";
@@ -698,7 +696,7 @@ case "$command" in
     for pkg in "${packages[@]}"
     do
       echo ""
-      cat setup.ini | awk -v query="$pkg" \
+      awk < setup.ini -v query="$pkg" \
         'BEGIN {
             RS="\n\n@ ";
             FS="\n";
@@ -792,7 +790,7 @@ case "$command" in
     rm "$SETUP_DIR/$pkg.lst.gz"
     rm -f /etc/postinstall/$pkg.sh.done
     gen_tmp_awk
-    cat $INSTALLED_DB | awk > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
     mv $INSTALLED_DB $INSTALLED_DB-save
     mv $tmp_awk $INSTALLED_DB
     echo Package $pkg removed
