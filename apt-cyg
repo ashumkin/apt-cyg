@@ -212,7 +212,7 @@ function listoutdated()
             fi
         elif test -z "$version_available"
         then
-            echo "Warning: Package $pkg ($version_available)" >&2
+            echo "Warning: Package $pkg ($version_installed) is absent on this mirror" >&2
         fi
     done
     rm $file_installed $file_available
