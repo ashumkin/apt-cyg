@@ -104,16 +104,16 @@ function findworkspace()
 
   if test -e $SETUP_DIR/last-cache
   then
-    tmp="`head -1 $SETUP_DIR/last-cache`"
-    cache="`cygpath -au "$tmp"`"
+    tmp="$(head -1 $SETUP_DIR/last-cache)"
+    cache="$(cygpath -au "$tmp")"
   fi
 
   if test -e $SETUP_DIR/last-mirror
   then
-    mirror="`head -1 $SETUP_DIR/last-mirror`"
+    mirror="$(head -1 $SETUP_DIR/last-mirror)"
   fi
   mirror=$(convert_mirror_name "$mirror")
-  mirrordir="`echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g"`"
+  mirrordir="$(echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g")"
 
   echo Working directory is $cache
   echo Mirror is $mirror
@@ -251,7 +251,7 @@ function unpack()
 
 function do_postinstall()
 {
-    pis=`ls /etc/postinstall/*.sh 2>/dev/null | wc -l`
+    pis=$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)
     if test $pis -gt 0 && ! test $noscripts -eq 1
     then
       echo Running postinstall scripts
@@ -271,7 +271,7 @@ function fetch_and_install()
 
     if test "$fetch_only" -eq 0
     then
-        already=`grep -c "^$pkg " $INSTALLED_DB`
+        already=$(grep -c "^$pkg " $INSTALLED_DB)
         if test $already -ge 1
         then
           if test $force -eq 0
@@ -307,7 +307,7 @@ function fetch_and_install()
                print "Package not found"
        }'
 
-    desc=`< "$pkg_desc"`
+    desc=$(< "$pkg_desc")
     if test "-$desc-" = "-Package not found-"
     then
       echo Package $pkg not found or ambiguous name, exiting >&2
@@ -319,7 +319,7 @@ function fetch_and_install()
     # download and unpack the bz2 file
 
     # pick the latest version, which comes first
-    install=`awk '/^install: / { print $2; exit }' "$pkg_desc"`
+    install=$(awk '/^install: / { print $2; exit }' "$pkg_desc")
 
     if test "-$install-" = "--"
     then
@@ -334,8 +334,8 @@ function fetch_and_install()
     wget $wget_options $mirror/$install
 
     # check the md5
-    digest=`awk '/^install: / { print $4; exit }' "$pkg_desc"`
-    digactual=`md5sum $file | awk '{print $1}'`
+    digest=$(awk '/^install: / { print $4; exit }' "$pkg_desc")
+    digactual=$(md5sum $file | awk '{print $1}')
     if ! test "$digest" = "$digactual"
     then
       echo MD5 sum did not match, exiting >&2
@@ -381,7 +381,7 @@ function fetch_and_install()
       echo $requires
       for package in $requires
       do
-        already=`grep -c "^$package " $INSTALLED_DB`
+        already=$(grep -c "^$package " $INSTALLED_DB)
         if test $already -ge 1
         then
           echo Package $package is already installed, skipping
@@ -713,17 +713,17 @@ case "$command" in
     checkpackages
     for pkg in "${packages[@]}"
     do
-      key=`which "$pkg" 2>/dev/null | sed "s:^/::"`
+      key=$(which "$pkg" 2>/dev/null | sed "s:^/::")
       if test "-$key-" = "--"
       then
         key="$pkg"
       fi
       for manifest in $SETUP_DIR/*.lst.gz
       do
-        found=`cat $manifest | gzip -d | grep -c "$key"`
+        found=$(cat $manifest | gzip -d | grep -c "$key")
         if test $found -gt 0
         then
-          package=`echo $manifest | sed -e "s:$SETUP_DIR/::" -e "s/.lst.gz//"`
+          package=$(echo $manifest | sed -e "s:$SETUP_DIR/::" -e "s/.lst.gz//")
           echo Found $key in the package $package
         fi
       done
@@ -754,7 +754,7 @@ case "$command" in
     for pkg in "${packages[@]}"
     do
 
-    already=`grep -c "^$pkg " $INSTALLED_DB`
+    already=$(grep -c "^$pkg " $INSTALLED_DB)
     if test $already = 0
     then
       echo Package $pkg is not installed, skipping
