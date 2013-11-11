@@ -817,4 +817,4 @@ case "$command" in
 
 esac
 
-# vim: set filetype=sh:
+# vim: set filetype=sh tabstop=4 shiftwidth=4 expandtab:
