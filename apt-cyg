@@ -503,6 +503,19 @@ function unpack_packages()
     done
 }
 
+fill_packages()
+{
+    local file="$1"
+
+    if test -f "$file"
+    then
+        local filepackages=$(< $file)
+        for f_file in ${filepackages[@]}
+        do
+            packages[${#packages[@]}]="$f_file"
+        done
+    fi
+}
 # process options
 
 # on Linux box emulate `cygpath`
@@ -519,7 +532,6 @@ fetch_only=0
 file=""
 force=0
 verbose=0
-dofile=0
 command=""
 packages=()
 prefix=""
@@ -589,13 +601,17 @@ do
     ;;
 
     --file|-f)
-      if ! test "-$2-" = "--"
+      if test "-$2-" = "--"
       then
-        file="$2"
-        dofile=1
-        shift
+          echo 1>&2 No file name provided, ignoring $1
       else
-        echo 1>&2 No file name provided, ignoring $1
+        file="$2"
+        if ! test -f "$file"
+        then
+            echo File $file not found, skipping >&2
+          file=""
+        fi
+        shift
       fi
       shift
     ;;
@@ -633,20 +649,7 @@ done
 # determine if cygwin runing in x86 or x86_64
 getarchitecture
 
-if test $dofile = 1
-then
-  if ! test -f "$file"
-  then
-      echo File $file not found, skipping >&2
-  else
-      filepackages=$(< $file)
-      for f_file in ${filepackages[@]}
-      do
-          packages[${#packages[@]}]="$f_file"
-      done
-  fi
-fi
-
+fill_packages "$file"
 
 case "$command" in
 
