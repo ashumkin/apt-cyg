@@ -279,7 +279,7 @@ function fetch_and_install()
         already=$(grep -c "^$pkg " $INSTALLED_DB)
         if test $already -ge 1
         then
-          if test $force -eq 0
+          if test -z "$force"
           then
               echo Package $pkg is already installed, skipping
               continue
@@ -552,7 +552,7 @@ noscripts=0
 noupdate=0
 fetch_only=""
 file=""
-force=0
+force=""
 verbose=0
 command=""
 packages_category=""
@@ -645,7 +645,7 @@ do
     ;;
 
 	--force|-F)
-		force=1
+		force="$1"
 		shift
 	;;
 
