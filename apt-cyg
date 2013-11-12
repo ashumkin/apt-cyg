@@ -365,10 +365,15 @@ function fetch_and_install()
         already=$(grep -c "^$package " $INSTALLED_DB)
         if test "$already" -ge 1
         then
-          echo Package $package is already installed, skipping
-          continue
+          if test -z "$force"
+          then
+              echo Package $package is already installed, skipping
+              continue
+          else
+              echo Package $package is already installed but forced reinstall
+          fi
         fi
-        "$APT_CYG" --prefix "$prefix" --noscripts install $package
+        "$APT_CYG" --prefix "$prefix" --noscripts install $fetch_only $force $package
         if ! test $? = 0 ; then warn=1; fi
       done
     fi
