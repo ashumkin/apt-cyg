@@ -274,7 +274,7 @@ function fetch_and_install()
     for pkg in "${packages[@]}"
     do
 
-    if test "$fetch_only" -eq 0
+    if test -z "$fetch_only"
     then
         already=$(grep -c "^$pkg " $INSTALLED_DB)
         if test $already -ge 1
@@ -347,7 +347,7 @@ function fetch_and_install()
       exit 1
     fi
 
-    if test "$fetch_only" -eq 1
+    if test -n "$fetch_only"
     then
         popd 1>/dev/null
         continue
@@ -486,13 +486,9 @@ function upgrade()
 {
     file_outdated=/tmp/apt-cyg.outdated.$$
     listoutdated 0 > $file_outdated
-    if test $fetch_only -eq 1
-    then
-        v_fetch="--fetch"
-    fi
     for pkg in $(< $file_outdated)
     do
-        "$APT_CYG" --prefix "$prefix" install --noupdate --force $v_fetch "$pkg"
+        "$APT_CYG" --prefix "$prefix" install --noupdate --force $fetch_only "$pkg"
     done
     rm $file_outdated
 }
@@ -554,7 +550,7 @@ then
 fi
 noscripts=0
 noupdate=0
-fetch_only=0
+fetch_only=""
 file=""
 force=0
 verbose=0
@@ -628,7 +624,7 @@ do
     ;;
 
     --fetch)
-        fetch_only=1
+        fetch_only="$1"
         shift
     ;;
 
