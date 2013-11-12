@@ -256,6 +256,11 @@ function unpack()
 
 function do_postinstall()
 {
+    if test -n "$prefix"
+    then
+        echo "--prefix is not empty. Skipping postinstall scripts" 1>&2
+        return
+    fi
     pis=$(ls /etc/postinstall/*.sh 2>/dev/null | wc -l)
     if test $pis -gt 0 && ! test $noscripts -eq 1
     then
