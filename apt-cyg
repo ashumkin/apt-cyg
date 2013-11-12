@@ -380,7 +380,7 @@ function fetch_and_install()
     fi
     if ! test $warn = 0
     then
-      echo "Warning: some required packages did not install, continuing"
+      echo "Warning: some required packages were not installed, continuing"
     fi
 
     if test -n "$fetch_only"
