@@ -334,6 +334,7 @@ function fetch_and_install()
     if test "-$install-" = "--"
     then
       echo "Could not find \"install\" in package description: obsolete package?" >&2
+      rm "$pkg_desc"
       exit 1
     fi
 
