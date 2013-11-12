@@ -277,7 +277,7 @@ function fetch_and_install()
     if test -z "$fetch_only"
     then
         already=$(grep -c "^$pkg " $INSTALLED_DB)
-        if test $already -ge 1
+        if test "$already" -ge 1
         then
           if test -z "$force"
           then
@@ -387,7 +387,7 @@ function fetch_and_install()
       for package in $requires
       do
         already=$(grep -c "^$package " $INSTALLED_DB)
-        if test $already -ge 1
+        if test "$already" -ge 1
         then
           echo Package $package is already installed, skipping
           continue
@@ -501,6 +501,11 @@ function init_vars()
         mkdir -p $SETUP_DIR
     fi
     INSTALLED_DB=$SETUP_DIR/installed.db
+    if test -n "$prefix" -a ! -f "$INSTALLED_DB"
+    then
+        # touch file if absent to avoid errors
+        > "$INSTALLED_DB"
+    fi
 }
 
 function unpack_packages()
@@ -796,7 +801,7 @@ case "$command" in
     do
 
     already=$(grep -c "^$pkg " $INSTALLED_DB)
-    if test $already = 0
+    if test "$already" = 0
     then
       echo Package $pkg is not installed, skipping
       continue
