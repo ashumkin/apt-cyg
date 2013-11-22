@@ -62,6 +62,7 @@ function usage()
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
 Options:
+  --arch, -a <arch>     : redefine architecture (intended for fetching on different architecture machine)
   --prefix, -p <prefix> : prefix to install packages to (for debug purposes; must be set first)
   --mirror, -m <url>    : set mirror
   --cache, -c <dir>     : set cache
@@ -79,7 +80,7 @@ EOF
 function version()
 {
   cat <<EOF
-apt-cyg version 0.57.2
+apt-cyg version 0.57.3
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
@@ -128,6 +129,10 @@ function findworkspace()
 
 function getarchitecture()
 {
+  if test -n "$arch"
+  then
+      return
+  fi
   cygwinarch=$(uname -m)
   case $cygwinarch in
       "i686")
@@ -519,6 +524,7 @@ command=""
 packages=()
 prefix=""
 wget_options="--no-clobber"
+arch=""
 
 # check apt-cyg dependencies
 check_dependencies
@@ -526,12 +532,14 @@ check_dependencies
 # initialize SETUP_DIR and INSTALLED_DB
 init_vars
 
-# determine if cygwin runing in x86 or x86_64
-getarchitecture
-
 while test $# -gt 0
 do
   case "$1" in
+
+    --arch|-a)
+        arch="$2"
+        shift; shift
+    ;;
 
     --prefix|-p)
         prefix="$2"
@@ -622,6 +630,8 @@ do
   esac
 done
 
+# determine if cygwin runing in x86 or x86_64
+getarchitecture
 
 if test $dofile = 1
 then

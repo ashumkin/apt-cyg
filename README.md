@@ -31,6 +31,7 @@ packageof <commands or files> | locate parent packages
 
 Option | Description
 --------|-------------
+--arch, -a <arch>     | redefine architecture (intended for fetching on different architecture machine)
 --prefix, -p <prefix> | prefix to install packages to (for debug purposes; must be set first)
 --mirror, -m <url> | set mirror
 --cache, -c <dir> | set cache
