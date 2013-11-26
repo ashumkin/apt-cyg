@@ -35,6 +35,7 @@ Option | Description
 --prefix, -p <prefix> | prefix to install packages to (for debug purposes; must be set first)
 --mirror, -m <url> | set mirror
 --cache, -c <dir> | set cache
+--category, -C <category> | install packages from specified category (mostly for using with --fetch (for pre-fetching))
 --fetch | fetch files only (not install)
 --file, -f <file> | read package names from file
 --force, -F | force install (for "install" only)

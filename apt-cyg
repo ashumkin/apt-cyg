@@ -62,20 +62,20 @@ function usage()
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
 Options:
-  --arch, -a <arch>     : redefine architecture (intended for fetching on different architecture machine)
-  --prefix, -p <prefix> : prefix to install packages to (for debug purposes; must be set first)
-  --mirror, -m <url>    : set mirror
-  --cache, -c <dir>     : set cache
-  --fetch               : fetch files only (not install)
-  --file, -f <file>     : read package names from file
-  --force, -F           : force install (for "install" only)
-  --noupdate, -u        : don't update setup.ini from mirror
-  --help                : show this help
-  --version             : show version info
+  --arch, -a <arch>          : redefine architecture (intended for fetching on different architecture machine)
+  --prefix, -p <prefix>      : prefix to install packages to (for debug purposes; must be set first)
+  --mirror, -m <url>         : set mirror
+  --cache, -c <dir>          : set cache
+  --category, -C <category>  : install packages from specified category
+                               (mostly for using with --fetch (for pre-fetching))
+  --fetch                    : fetch files only (not install)
+  --file, -f <file>          : read package names from file
+  --force, -F                : force install (for "install" only)
+  --noupdate, -u             : don't update setup.ini from mirror
+  --help                     : show this help
+  --version                  : show version info
 EOF
 }
-
-
 
 function version()
 {
@@ -437,16 +437,33 @@ function show_available_packages()
 {
     q_verbose=$1
     query="$(escape_package_name "$2")"
+    category="$3"
     # print version (found "version:" field"
     # sort list (started with underscores are last)
     awk < setup.ini -v query="$query" -v verbose=$q_verbose -v version_re="^version: " \
+        -v requires_re="^requires: " \
+        -v category_re="^category: " -v category="\\\<$category\\\>" \
         'BEGIN {
             RS="\n\n@ ";
             FS="\n";
             ORS="\n"
         }
         {
-            if ($1 !~ "^#" && $1 ~ query) {
+            if ($1 ~ "^#") next;
+            matched=""
+            requires=""
+            if (query == "") {
+                for(i=1; i<=NF; i++) {
+                    if ($i ~ requires_re) {
+                        requires=$i
+                        sub(requires_re, "", requires)
+                    } else if ($i ~ category_re && $i ~ category) {
+                        sub(category_re, "", $i)
+                        matched=$1
+                    }
+                }
+                if (matched) print matched, requires
+            } else if ($1 ~ query) {
                 if (verbose == 0)
                     NF=1
                 else {
@@ -506,6 +523,8 @@ function unpack_packages()
 fill_packages()
 {
     local file="$1"
+    local packages_category="$2"
+    local recursively="$3"
 
     if test -f "$file"
     then
@@ -514,6 +533,13 @@ fill_packages()
         do
             packages[${#packages[@]}]="$f_file"
         done
+    fi
+    if test -n "$packages_category"
+    then
+        findworkspace
+        file_category=/tmp/apt-cyg.category.$$_
+        show_available_packages $verbose "" "$packages_category" $recursively > "$file_category"
+        fill_packages "$file_category"
     fi
 }
 # process options
@@ -533,6 +559,7 @@ file=""
 force=0
 verbose=0
 command=""
+packages_category=""
 packages=()
 prefix=""
 wget_options="--no-clobber"
@@ -568,6 +595,11 @@ do
     --cache|-c)
       cygpath -aw "$2" > $SETUP_DIR/last-cache
       shift ; shift
+    ;;
+
+  --category|-C)
+      packages_category="$2"
+      shift; shift
     ;;
 
     --noscripts)
@@ -649,7 +681,7 @@ done
 # determine if cygwin runing in x86 or x86_64
 getarchitecture
 
-fill_packages "$file"
+fill_packages "$file" "$packages_category" 1
 
 case "$command" in
 
