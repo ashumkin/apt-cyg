@@ -72,6 +72,7 @@ Options:
   --file, -f <file>          : read package names from file
   --force, -F                : force install (for "install" only)
   --noupdate, -u             : don't update setup.ini from mirror
+  --ignore-errors, -I        : ignore MD5 errors (for fetching only)
   --help                     : show this help
   --version                  : show version info
 EOF
@@ -308,6 +309,7 @@ function get_package_desc_file()
 function download_package()
 {
     local pkg_desc="$1"
+    local ignore_md5_errors="$2"
 
     # pick the latest version, which comes first
     local install=$(awk '/^install: / { print $2; exit }' "$pkg_desc")
@@ -331,8 +333,14 @@ function download_package()
     local digactual=$(md5sum $downloaded_file | awk '{print $1}')
     if ! test "$digest" = "$digactual"
     then
-      echo MD5 sum did not match, exiting >&2
-      exit 1
+      echo -n "MD5 sum did not match" >&2
+      if test -z "$ignore_md5_errors"
+      then
+          echo , exiting >&2
+          exit 1
+      else
+          echo , ignoring >&2
+      fi
     fi
 }
 
@@ -380,6 +388,15 @@ function get_requirements_list()
 function fetch_and_install()
 {
     local fetch_only="$1"
+    local ignore_md5_errors="$2"
+    # ignoring MD5 sum is for fetching only
+    if test -n "$fetch_only" -a -n "$ignore_md5_errors"
+    then
+        ignore_md5_errors=1
+    else
+        ignore_md5_errors=0
+    fi
+
     get_requirements_list
 
     for pkg in "${requirements[@]}" "${packages[@]}"
@@ -407,7 +424,7 @@ function fetch_and_install()
 
     echo Fetching $pkg
 
-    download_package "$pkg_desc"
+    download_package "$pkg_desc" "$ignore_md5_errors"
 
     if test -n "$fetch_only"
     then
@@ -605,6 +622,7 @@ prefix=""
 wget_options="--no-clobber"
 arch=""
 requirements=()
+ignore_md5_errors=""
 
 # check apt-cyg dependencies
 check_dependencies
@@ -650,6 +668,11 @@ do
 
     --noupdate|-u)
       noupdate=1
+      shift
+    ;;
+
+    --ignore-errors|-I)
+      ignore_md5_errors="ignore"
       shift
     ;;
 
@@ -823,7 +846,7 @@ case "$command" in
     checkpackages
     findworkspace
     getsetup
-    fetch_and_install $fetch_only
+    fetch_and_install $fetch_only $ignore_md5_errors
 
   ;;
 
