@@ -169,9 +169,16 @@ function getsetup()
     if test -e setup.bz2 && test $? -eq 0
     then
       bunzip2 setup.bz2
-      mv setup setup.ini
-      echo Updated setup.ini
-    else
+      if test $? -ne 0
+      then
+          echo Error unpacking setup.ini
+      else
+          mv setup setup.ini
+          echo Updated setup.ini
+      fi
+    fi
+    if ! test -f setup.ini
+    then
       wget -N ${wget_options//--no-clobber} $mirror/$arch/setup.ini
       if test -e setup.ini && test $? -eq 0
       then
