@@ -100,9 +100,20 @@ Copyright (c) 2013 Denny Schäfer.
 EOF
 }
 
-function convert_mirror_name()
+function mirror_name_url_to_file
 {
-    echo "$1" | sed -e "s/%3a/:/g" -e "s:%2f:/:g"
+    local arg="$1"
+    arg=${arg//%3a/:}
+    arg=${arg//%2f//}
+    echo $arg
+}
+
+function mirror_name_file_to_url
+{
+    local arg="$1"
+    arg=${arg//:/%3a}
+    arg=${arg//\//%2f}
+    echo $arg
 }
 
 function findworkspace()
@@ -124,8 +135,8 @@ function findworkspace()
   then
     mirror="$(head -1 $SETUP_DIR/last-mirror)"
   fi
-  mirror=$(convert_mirror_name "$mirror")
-  mirrordir="$(echo "$mirror" | sed -e "s/:/%3a/g" -e "s:/:%2f:g")"
+  mirror=$(mirror_name_url_to_file "$mirror")
+  mirrordir=$(mirror_name_file_to_url "$mirror")
 
   echo Working directory is $cache
   echo Mirror is $mirror
@@ -707,7 +718,7 @@ do
     ;;
 
     --mirror|-m)
-      convert_mirror_name "$2" > $SETUP_DIR/last-mirror
+      mirror_name_url_to_file "$2" > $SETUP_DIR/last-mirror
       shift ; shift
     ;;
 
