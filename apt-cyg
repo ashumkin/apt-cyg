@@ -669,6 +669,156 @@ function show_current_settings
     cat $SETUP_DIR/last-cache
 }
 
+# commands functions
+function command_describe
+{
+    checkpackages
+    findworkspace
+    getsetup
+    for pkg in "${packages[@]}"
+    do
+      echo ""
+      awk < setup.ini -v query="$pkg" \
+        'BEGIN {
+            RS="\n\n@ ";
+            FS="\n";
+            ORS="\n"
+        }
+        { if ($1 ~ query) {print $0 "\n"} }'
+    done
+}
+
+function command_find
+{
+    checkpackages
+    findworkspace
+    getsetup
+
+    for pkg in "${packages[@]}"
+    do
+      echo ""
+      echo Searching for installed packages matching $pkg:
+      show_installed_packages $verbose "$pkg"
+      echo ""
+      echo Searching for installable packages matching $pkg:
+      show_available_packages $verbose "$pkg"
+    done
+}
+
+function command_localinstall
+{
+    checkpackages
+    unpack_packages
+    do_postinstall
+}
+
+function command_install
+{
+    checkpackages
+    findworkspace
+    getsetup
+    fetch_and_install $fetch_only $ignore_md5_errors
+}
+
+function command_packageof
+{
+    checkpackages
+    for pkg in "${packages[@]}"
+    do
+      key=$(which "$pkg" 2>/dev/null | sed "s:^/::")
+      if test "-$key-" = "--"
+      then
+        key="$pkg"
+      fi
+      for manifest in $SETUP_DIR/*.lst.gz
+      do
+        found=$(cat $manifest | gzip -d | grep -c "$key")
+        if test $found -gt 0
+        then
+          package=$(echo $manifest | sed -e "s:$SETUP_DIR/::" -e "s/.lst.gz//")
+          echo Found $key in the package $package
+        fi
+      done
+    done
+}
+
+function command_remove
+{
+
+    checkpackages
+    for pkg in "${packages[@]}"
+    do
+
+    already=$(grep -c "^$pkg " $INSTALLED_DB)
+    if test "$already" = 0
+    then
+      echo Package $pkg is not installed, skipping
+      continue
+    fi
+
+    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
+    for req in $dontremove
+    do
+      if test "-$pkg-" = "-$req-"
+      then
+        echo apt-cyg cannot remove package $pkg, exiting >&2
+        exit 1
+      fi
+    done
+
+    if ! test -e "$SETUP_DIR/$pkg.lst.gz"
+    then
+      echo Package manifest missing, cannot remove $pkg. Exiting >&2
+      exit 1
+    fi
+    echo Removing $pkg
+
+    # run preremove scripts
+
+    if test -e "/etc/preremove/$pkg.sh"
+    then
+      "/etc/preremove/$pkg.sh"
+      rm "/etc/preremove/$pkg.sh"
+    fi
+
+    cat "$SETUP_DIR/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
+    rm "$SETUP_DIR/$pkg.lst.gz"
+    rm -f /etc/postinstall/$pkg.sh.done
+    gen_tmp_awk
+    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
+    mv $INSTALLED_DB $INSTALLED_DB-save
+    mv $tmp_awk $INSTALLED_DB
+    echo Package $pkg removed
+
+    done
+}
+
+function command_show
+{
+    echo 1>&2 The following packages are installed:
+    show_installed_packages $verbose
+}
+
+function command_outdated
+{
+    findworkspace
+    getsetup
+    listoutdated $verbose
+}
+
+function command_update
+{
+    findworkspace
+    getsetup
+}
+
+function command_upgrade
+{
+    findworkspace
+    getsetup
+    upgrade
+}
+
 # process options
 
 # on Linux box emulate `cygpath`
@@ -825,163 +975,9 @@ fill_packages "$file" "$packages_category" 1
 
 case "$command" in
 
-  outdated)
-    findworkspace
-    getsetup
-    listoutdated $verbose
-
-  ;;
-
-  update)
-
-    findworkspace
-    getsetup
-
-  ;;
-
-  upgrade)
-    findworkspace
-    getsetup
-    upgrade
-
-  ;;
-
-  show)
-
-    echo 1>&2 The following packages are installed:
-    show_installed_packages $verbose
-
-  ;;
-
-
-  find)
-
-    checkpackages
-    findworkspace
-    getsetup
-
-    for pkg in "${packages[@]}"
-    do
-      echo ""
-      echo Searching for installed packages matching $pkg:
-      show_installed_packages $verbose "$pkg"
-      echo ""
-      echo Searching for installable packages matching $pkg:
-      show_available_packages $verbose "$pkg"
-    done
-
-  ;;
-
-
-  describe)
-
-    checkpackages
-    findworkspace
-    getsetup
-    for pkg in "${packages[@]}"
-    do
-      echo ""
-      awk < setup.ini -v query="$pkg" \
-        'BEGIN {
-            RS="\n\n@ ";
-            FS="\n";
-            ORS="\n"
-        }
-        { if ($1 ~ query) {print $0 "\n"} }'
-    done
-
-  ;;
-
-
-  packageof)
-
-    checkpackages
-    for pkg in "${packages[@]}"
-    do
-      key=$(which "$pkg" 2>/dev/null | sed "s:^/::")
-      if test "-$key-" = "--"
-      then
-        key="$pkg"
-      fi
-      for manifest in $SETUP_DIR/*.lst.gz
-      do
-        found=$(cat $manifest | gzip -d | grep -c "$key")
-        if test $found -gt 0
-        then
-          package=$(echo $manifest | sed -e "s:$SETUP_DIR/::" -e "s/.lst.gz//")
-          echo Found $key in the package $package
-        fi
-      done
-    done
-
-  ;;
-
-
-  install)
-
-    checkpackages
-    findworkspace
-    getsetup
-    fetch_and_install $fetch_only $ignore_md5_errors
-
-  ;;
-
-  localinstall)
-    checkpackages
-    unpack_packages
-    do_postinstall
-
-  ;;
-
-  remove)
-
-    checkpackages
-    for pkg in "${packages[@]}"
-    do
-
-    already=$(grep -c "^$pkg " $INSTALLED_DB)
-    if test "$already" = 0
-    then
-      echo Package $pkg is not installed, skipping
-      continue
-    fi
-
-    dontremove="cygwin coreutils gawk bzip2 tar wget bash"
-    for req in $dontremove
-    do
-      if test "-$pkg-" = "-$req-"
-      then
-        echo apt-cyg cannot remove package $pkg, exiting >&2
-        exit 1
-      fi
-    done
-
-    if ! test -e "$SETUP_DIR/$pkg.lst.gz"
-    then
-      echo Package manifest missing, cannot remove $pkg. Exiting >&2
-      exit 1
-    fi
-    echo Removing $pkg
-
-    # run preremove scripts
-
-    if test -e "/etc/preremove/$pkg.sh"
-    then
-      "/etc/preremove/$pkg.sh"
-      rm "/etc/preremove/$pkg.sh"
-    fi
-
-    cat "$SETUP_DIR/$pkg.lst.gz" | gzip -d | awk '/[^\/]$/ {print "rm -f \"/" $0 "\""}' | sh
-    rm "$SETUP_DIR/$pkg.lst.gz"
-    rm -f /etc/postinstall/$pkg.sh.done
-    gen_tmp_awk
-    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" '{if (pkg != $1) print $0}'
-    mv $INSTALLED_DB $INSTALLED_DB-save
-    mv $tmp_awk $INSTALLED_DB
-    echo Package $pkg removed
-
-    done
-
+  outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
+      # execute an appropriate function
+      command_$command
   ;;
 
   *)
