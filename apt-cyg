@@ -73,7 +73,9 @@ Options:
   --force, -F                : force install (for "install" only)
   --noupdate, -u             : don't update setup.ini from mirror
   --ignore-errors, -I        : ignore MD5 errors (for fetching only)
+  --wget-options, -w <opt>   : pass option to wget
   --help                     : show this help
+  --verbose, -v              : be verbose (show package versions, not just names)
   --version                  : show version info
 EOF
 }
