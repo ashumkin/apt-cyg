@@ -601,6 +601,16 @@ fill_packages()
         fill_packages "$file_category"
     fi
 }
+
+function show_current_settings
+{
+    echo
+    echo Current mirror set:
+    cat $SETUP_DIR/last-mirror
+    echo Cache dir set:
+    cat $SETUP_DIR/last-cache
+}
+
 # process options
 
 # on Linux box emulate `cygpath`
@@ -680,6 +690,7 @@ do
 
     --help)
       usage
+      show_current_settings
       exit 0
     ;;
 
