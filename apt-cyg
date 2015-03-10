@@ -460,13 +460,14 @@ function fetch_and_install()
         mv $INSTALLED_DB $INSTALLED_DB-save
         mv $tmp_awk $INSTALLED_DB
 
-        # run all postinstall scripts
-        do_postinstall
 
         echo Package $pkg installed
         rm "$pkg_desc"
 
     done
+
+    # run all postinstall scripts
+    do_postinstall
 }
 
 function show_installed_packages()
