@@ -388,6 +388,26 @@ function get_requirements_list()
     fi
 }
 
+function update_installed_db
+{
+    gen_tmp_awk
+    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
+      "{
+          if (ins != 1 && pkg <= \$1) {
+              print pkg \" \" bz \" 0\";
+              ins=1
+              if (pkg == \$1)
+                  noprint=1
+         };
+         if (!noprint)
+             print \$0;
+         noprint=0
+      }
+      END { if (ins != 1) print pkg \" \" bz \" 0\"}"
+    mv $INSTALLED_DB $INSTALLED_DB-save
+    mv $tmp_awk $INSTALLED_DB
+}
+
 function fetch_and_install()
 {
     local fetch_only="$1"
@@ -443,23 +463,7 @@ function fetch_and_install()
         popd 1>/dev/null
 
         # update the package database
-        gen_tmp_awk
-        awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
-          "{
-              if (ins != 1 && pkg <= \$1) {
-                  print pkg \" \" bz \" 0\";
-                  ins=1
-                  if (pkg == \$1)
-                      noprint=1
-             };
-             if (!noprint)
-                 print \$0;
-             noprint=0
-          }
-          END { if (ins != 1) print pkg \" \" bz \" 0\"}"
-        mv $INSTALLED_DB $INSTALLED_DB-save
-        mv $tmp_awk $INSTALLED_DB
-
+        update_installed_db
 
         echo Package $pkg installed
         rm "$pkg_desc"
@@ -867,6 +871,7 @@ case "$command" in
   localinstall)
     checkpackages
     unpack_packages
+    update_installed_db
     do_postinstall
 
   ;;
