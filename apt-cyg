@@ -405,66 +405,66 @@ function fetch_and_install()
     for pkg in "${requirements[@]}" "${packages[@]}"
     do
 
-    if test -z "$fetch_only"
-    then
-        already=$(grep -c "^$pkg " $INSTALLED_DB)
-        if test "$already" -ge 1
+        if test -z "$fetch_only"
         then
-          if test -z "$force"
-          then
-              echo Package $pkg is already installed, skipping
-              continue
-          else
-              echo Package $pkg is already installed but forced reinstall
-          fi
+            already=$(grep -c "^$pkg " $INSTALLED_DB)
+            if test "$already" -ge 1
+            then
+              if test -z "$force"
+              then
+                  echo Package $pkg is already installed, skipping
+                  continue
+              else
+                  echo Package $pkg is already installed but forced reinstall
+              fi
+            fi
+            echo ""
         fi
-        echo ""
-    fi
 
-    # look for package and save desc file
-    # download the bz2 file
-    get_package_desc_file "$pkg"
+        # look for package and save desc file
+        # download the bz2 file
+        get_package_desc_file "$pkg"
 
-    echo Fetching $pkg
+        echo Fetching $pkg
 
-    download_package "$pkg_desc" "$ignore_md5_errors"
+        download_package "$pkg_desc" "$ignore_md5_errors"
 
-    if test -n "$fetch_only"
-    then
+        if test -n "$fetch_only"
+        then
+            # pushd is in `download_package`
+            popd 1>/dev/null
+            rm "$pkg_desc"
+            continue
+        fi
+
+        # unpack the bz2 file
+        unpack "$downloaded_file"
         # pushd is in `download_package`
         popd 1>/dev/null
+
+        # update the package database
+        gen_tmp_awk
+        awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
+          "{
+              if (ins != 1 && pkg <= \$1) {
+                  print pkg \" \" bz \" 0\";
+                  ins=1
+                  if (pkg == \$1)
+                      noprint=1
+             };
+             if (!noprint)
+                 print \$0;
+             noprint=0
+          }
+          END { if (ins != 1) print pkg \" \" bz \" 0\"}"
+        mv $INSTALLED_DB $INSTALLED_DB-save
+        mv $tmp_awk $INSTALLED_DB
+
+        # run all postinstall scripts
+        do_postinstall
+
+        echo Package $pkg installed
         rm "$pkg_desc"
-        continue
-    fi
-
-    # unpack the bz2 file
-    unpack "$downloaded_file"
-    # pushd is in `download_package`
-    popd 1>/dev/null
-
-    # update the package database
-    gen_tmp_awk
-    awk < $INSTALLED_DB > $tmp_awk -v pkg="$pkg" -v bz="$file" -v ins=0 \
-      "{
-          if (ins != 1 && pkg <= \$1) {
-              print pkg \" \" bz \" 0\";
-              ins=1
-              if (pkg == \$1)
-                  noprint=1
-         };
-         if (!noprint)
-             print \$0;
-         noprint=0
-      }
-      END { if (ins != 1) print pkg \" \" bz \" 0\"}"
-    mv $INSTALLED_DB $INSTALLED_DB-save
-    mv $tmp_awk $INSTALLED_DB
-
-    # run all postinstall scripts
-    do_postinstall
-
-    echo Package $pkg installed
-    rm "$pkg_desc"
 
     done
 }
