@@ -78,6 +78,7 @@ Options:
   --verbose, -v              : be verbose (show package versions, not just names)
   --version                  : show version info
 EOF
+  show_current_settings
 }
 
 function version()
@@ -690,7 +691,6 @@ do
 
     --help)
       usage
-      show_current_settings
       exit 0
     ;;
 
