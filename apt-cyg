@@ -54,7 +54,7 @@ function usage()
   "apt-cyg install <package names>" to install packages
   "apt-cyg localinstall <package names>" to install packages from tars
   "apt-cyg remove <package names>" to remove packages
-  "apt-cyg outdated" to list outdated packages
+  "apt-cyg outdated [<package names>]" to list outdated packages (or test specifes ones)
   "apt-cyg update" to update setup.ini
   "apt-cyg upgrade" to upgrade outdated packages
   "apt-cyg show" to show installed packages
@@ -85,7 +85,7 @@ EOF
 function version()
 {
   cat <<EOF
-apt-cyg version 0.57.4
+apt-cyg version 0.57.5
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
@@ -209,10 +209,23 @@ function listoutdated()
 {
     file_installed=/tmp/apt-cyg.installed.$$_
     file_available=/tmp/apt-cyg.available.$$_
-    show_installed_packages 1 >$file_installed
-    # set package name to "any" (regexp)
-    # as empty package name means to find by category
-    show_available_packages 1 '.' >$file_available
+    >$file_installed
+    >$file_available
+    if test ${#packages[@]} -eq 0
+    then
+        show_installed_packages 1 "$pkg" >>$file_installed
+        # set package name to "any" (regexp)
+        # as empty package name means to find by category
+        show_available_packages 1 '.' >>$file_available
+    else
+        for pkg in "${packages[@]}"
+        do
+            show_installed_packages 1 "$pkg" >>$file_installed
+            # set package name to "any" (regexp)
+            # as empty package name means to find by category
+            show_available_packages 1 "$pkg" >>$file_available
+        done
+    fi
     if ! test -s $file_available
     then
         echo WARNING! Available packages list is empty! 1>&2
