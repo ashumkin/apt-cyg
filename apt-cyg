@@ -20,6 +20,7 @@
 
 # this script requires some packages
 
+APT_CYG_VERSION='0.57.6'
 APT_CYG="$0"
 if test "${APT_CYG:0:1}" != "/"
 then
@@ -49,6 +50,7 @@ function check_dependencies
 
 function usage()
 {
+  show_version
   cat <<EOF
   apt-cyg: Installs and removes Cygwin packages.
   "apt-cyg install <package names>" to install packages
@@ -82,10 +84,14 @@ EOF
   show_current_settings
 }
 
+function show_version()
+{
+    echo apt-cyg version $APT_CYG_VERSION
+}
 function version()
 {
+  show_version
   cat <<EOF
-apt-cyg version 0.57.5
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
