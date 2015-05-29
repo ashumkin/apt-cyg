@@ -190,6 +190,12 @@ function checkpackages()
 
 function escape_package_name()
 {
+    if test "$1" == "."
+    then
+        # special case - any name
+        echo $1
+        exit
+    fi
     # escape special chars in package name (if any)
     echo $1 | sed -e "s/[+.*()&?]/\\\\&/g"
 }
@@ -204,7 +210,13 @@ function listoutdated()
     file_installed=/tmp/apt-cyg.installed.$$_
     file_available=/tmp/apt-cyg.available.$$_
     show_installed_packages 1 >$file_installed
-    show_available_packages 1 >$file_available
+    # set package name to "any" (regexp)
+    # as empty package name means to find by category
+    show_available_packages 1 '.' >$file_available
+    if ! test -s $file_available
+    then
+        echo WARNING! Available packages list is empty! 1>&2
+    fi
     packages_changed=$(diff -d -y $file_installed $file_available  | grep -e '|' | awk '{ print $1 }')
     q_verbose="$1"
     for pkg in $packages_changed
