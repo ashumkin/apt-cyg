@@ -68,6 +68,7 @@ Options:
   --cache, -c <dir>          : set cache
   --category, -C <category>  : install packages from specified category
                                (mostly for using with --fetch (for pre-fetching))
+  --debug                    : debug mode (do not remove some temprorary files)
   --fetch                    : fetch files only (not install)
   --file, -f <file>          : read package names from file
   --force, -F                : force install (for "install" only)
@@ -84,7 +85,7 @@ EOF
 function version()
 {
   cat <<EOF
-apt-cyg version 0.57.3
+apt-cyg version 0.57.4
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
@@ -224,7 +225,13 @@ function listoutdated()
             echo "Warning: Package $pkg ($version_installed) is absent on this mirror" >&2
         fi
     done
-    rm $file_installed $file_available
+    if test $debug -eq 0
+    then
+        rm $file_installed $file_available
+    else
+        echo DEBUG: installed: $file_installed >&2
+        echo DEBUG: available: $file_available >&2
+    fi
 }
 
 function unpack()
@@ -637,6 +644,7 @@ wget_options="--no-clobber"
 arch=""
 requirements=()
 ignore_md5_errors=""
+debug=0
 
 # check apt-cyg dependencies
 check_dependencies
@@ -697,6 +705,11 @@ do
 
     --verbose)
       verbose=1
+      shift
+    ;;
+
+    --debug)
+      debug=1
       shift
     ;;
 
