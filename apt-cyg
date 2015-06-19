@@ -389,12 +389,12 @@ function download_package()
     pushd "$pkg_dir" 1>/dev/null
     wget $wget_options $mirror/$install
 
-    # check the md5
+    # verify the checksum
     local digest=$(awk '/^install: / { print $4; exit }' "$pkg_desc")
-    local digactual=$(md5sum $downloaded_file | awk '{print $1}')
+    local digactual=$(sha512sum $downloaded_file | awk '{print $1}')
     if ! test "$digest" = "$digactual"
     then
-      echo -n "MD5 sum did not match" >&2
+      echo -n "Checksum did not match" >&2
       if test -z "$ignore_errors"
       then
           echo , exiting >&2
