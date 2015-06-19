@@ -522,8 +522,11 @@ function fetch_and_install()
 
     done
 
-    # run all postinstall scripts
-    do_postinstall
+    if test -n "$fetch_only"
+    then
+        # run all postinstall scripts
+        do_postinstall
+    fi
 }
 
 function show_installed_packages()
