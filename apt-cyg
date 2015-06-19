@@ -75,7 +75,7 @@ Options:
   --file, -f <file>          : read package names from file
   --force, -F                : force install (for "install" only)
   --noupdate, -u             : don't update setup.ini from mirror
-  --ignore-errors, -I        : ignore MD5 errors (for fetching only)
+  --ignore-errors, -I        : ignore errors (for fetching only)
   --wget-options, -w <opt>   : pass option to wget
   --help                     : show this help
   --verbose, -v              : be verbose (show package versions, not just names)
@@ -368,7 +368,7 @@ function get_package_desc_file()
 function download_package()
 {
     local pkg_desc="$1"
-    local ignore_md5_errors="$2"
+    local ignore_errors="$2"
 
     # pick the latest version, which comes first
     local install=$(awk '/^install: / { print $2; exit }' "$pkg_desc")
@@ -393,7 +393,7 @@ function download_package()
     if ! test "$digest" = "$digactual"
     then
       echo -n "MD5 sum did not match" >&2
-      if test -z "$ignore_md5_errors"
+      if test -z "$ignore_errors"
       then
           echo , exiting >&2
           exit 1
@@ -467,13 +467,13 @@ function update_installed_db
 function fetch_and_install()
 {
     local fetch_only="$1"
-    local ignore_md5_errors="$2"
+    local ignore_errors="$2"
     # ignoring MD5 sum is for fetching only
-    if test -n "$fetch_only" -a -n "$ignore_md5_errors"
+    if test -n "$fetch_only" -a -n "$ignore_errors"
     then
-        ignore_md5_errors="ignore"
+        ignore_errors="ignore"
     else
-        ignore_md5_errors=
+        ignore_errors=
     fi
 
     get_requirements_list
@@ -503,7 +503,7 @@ function fetch_and_install()
 
         echo Fetching $pkg
 
-        download_package "$pkg_desc" "$ignore_md5_errors"
+        download_package "$pkg_desc" "$ignore_errors"
 
         if test -n "$fetch_only"
         then
@@ -725,7 +725,7 @@ function command_install
     checkpackages
     findworkspace
     getsetup
-    fetch_and_install $fetch_only $ignore_md5_errors
+    fetch_and_install $fetch_only $ignore_errors
 }
 
 function command_packageof
@@ -850,7 +850,7 @@ prefix=""
 wget_options="--no-clobber"
 arch=""
 requirements=()
-ignore_md5_errors=
+ignore_errors=
 debug=0
 
 # check apt-cyg dependencies
@@ -901,7 +901,7 @@ do
     ;;
 
     --ignore-errors|-I)
-      ignore_md5_errors="ignore"
+      ignore_errors="ignore"
       shift
     ;;
 
