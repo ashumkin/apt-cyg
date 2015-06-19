@@ -338,6 +338,7 @@ function do_postinstall()
 function get_package_desc_file()
 {
     local pkg="$1"
+    local ignore_errors="$2"
     pkg_desc="/tmp/apt-cyg.$pkg.desc"
     awk < setup.ini > "$pkg_desc" -v package="$pkg" \
       'BEGIN {
@@ -360,11 +361,22 @@ function get_package_desc_file()
     local desc=$(< "$pkg_desc")
     if test -z "$desc"
     then
-      echo Package $pkg not found or ambiguous name, exiting >&2
       rm "$pkg_desc"
-      exit 1
+      echo -n Package $pkg not found or ambiguous name >&2
+      if test -z "$ignore_errors"
+      then
+          echo , exiting >&2
+          exit 1
+      else
+          echo
+          pkg_desc=
+      fi
     fi
-    echo Found package $pkg >&2
+    # if found (or no errors ignored)
+    if test -n "$pkg_desc"
+    then
+        echo Found package $pkg >&2
+    fi
 }
 
 function download_package()
@@ -414,12 +426,13 @@ function array_contains() {
 function get_requirements_list()
 {
     local pkg="$1"
+    local ignore_errors="$2"
     if test -z "$pkg"
     then
         echo "Getting requirements..." >&2
         for pkg in "${packages[@]}"
         do
-            get_requirements_list "$pkg"
+            get_requirements_list "$pkg" "$ignore_errors"
         done
         # comment line below to see requirements only
         return
@@ -431,7 +444,11 @@ function get_requirements_list()
         exit
 
     else
-        get_package_desc_file "$pkg"
+        get_package_desc_file "$pkg" "$ignore_errors"
+        if test -z "$pkg_desc"
+        then
+            return
+        fi
         # recursively install required packages
         local requires=$(awk '/^requires: / {s=gensub("(requires: )?([^ ]+) ?", "\\2 ", "g", $0); print s}' "$pkg_desc")
 
@@ -440,7 +457,7 @@ function get_requirements_list()
             if ! array_contains "$req" "${requirements[@]}"
             then
                 requirements[${#requirements[@]}]="$req"
-                get_requirements_list "$req"
+                get_requirements_list "$req" "$ignore_errors"
             fi
         done
     fi
@@ -453,12 +470,12 @@ function fetch_and_install()
     # ignoring MD5 sum is for fetching only
     if test -n "$fetch_only" -a -n "$ignore_errors"
     then
-        ignore_errors=1
+        ignore_errors="ignore"
     else
-        ignore_errors=0
+        ignore_errors=
     fi
 
-    get_requirements_list
+    get_requirements_list "" "$ignore_errors"
 
     for pkg in "${requirements[@]}" "${packages[@]}"
     do
@@ -481,7 +498,12 @@ function fetch_and_install()
 
         # look for package and save desc file
         # download the bz2 file
-        get_package_desc_file "$pkg"
+        get_package_desc_file "$pkg" "$ignore_errors"
+
+        if test -z "$pkg_desc"
+        then
+            continue
+        fi
 
         echo Fetching $pkg
 
@@ -892,7 +914,7 @@ prefix=""
 wget_options="--no-clobber"
 arch=""
 requirements=()
-ignore_errors=""
+ignore_errors=
 debug=0
 use_lftp=0
 
