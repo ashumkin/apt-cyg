@@ -140,9 +140,9 @@ function findworkspace()
 
   echo Working directory is $cache
   echo Mirror is $mirror
-  if mkdir -p "$cache/$mirrordir"
+  if mkdir -p "$cache/$mirrordir/$arch"
   then
-      cd "$cache/$mirrordir"
+      cd "$cache/$mirrordir/$arch"
   else
       echo Cannot create cache dir. Exiting... >&2
       exit 1
@@ -380,7 +380,7 @@ function download_package()
       exit 1
     fi
 
-    local pkg_dir=$(dirname "$install")
+    local pkg_dir=$(dirname "${install#$arch/}")
     # downloaded_file is used later outside
     downloaded_file=$(basename "$install")
     mkdir -p "$pkg_dir"
