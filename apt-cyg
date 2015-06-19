@@ -20,7 +20,7 @@
 
 # this script requires some packages
 
-APT_CYG_VERSION='0.57.6'
+APT_CYG_VERSION='0.57.7'
 APT_CYG="$0"
 if test "${APT_CYG:0:1}" != "/"
 then
@@ -63,6 +63,7 @@ function usage()
   "apt-cyg find <patterns>" to find packages matching patterns
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
+  "apt-cyg makemirror" to make a "mirror" based on cached files and a mirror
 Options:
   --arch, -a <arch>          : redefine architecture (intended for fetching on different architecture machine)
   --prefix, -p <prefix>      : prefix to install packages to (for debug purposes; must be set first)
@@ -74,6 +75,7 @@ Options:
   --fetch                    : fetch files only (not install)
   --file, -f <file>          : read package names from file
   --force, -F                : force install (for "install" only)
+  --lftp, -L                 : use \`lftp\` for \`makemirror\` command if mirror is on FTP
   --noupdate, -u             : don't update setup.ini from mirror
   --ignore-errors, -I        : ignore MD5 errors (for fetching only)
   --wget-options, -w <opt>   : pass option to wget
@@ -723,6 +725,51 @@ function command_install
     fetch_and_install $fetch_only $ignore_md5_errors
 }
 
+function command_makemirror
+{
+    findworkspace
+    # find all packages
+    package_dirs=$(find $arch -iname '*.*z*' \
+        | while read package
+        do
+            echo $(dirname "$package")
+        done \
+        | awk '!_[$1]++' | tee /dev/stderr)
+    if [[ "$mirror" != ftp://*  && $use_lftp -eq 1 ]]
+    then
+        # disable `lftp` for non-FTP schemas
+        use_lftp=0
+    else
+        tmp_lftp_commands=/tmp/apt-cyg.lftp.commands.$$
+        echo "open $mirror" > "$tmp_lftp_commands"
+    fi
+    for pack in ${package_dirs[@]}
+    do
+        setup_hint="$pack/setup.hint"
+        # if file is absent or forced
+        if ! test -f "$setup_hint" -a -z "$force"
+        then
+            if test $use_lftp -eq 1
+            then
+                echo get $setup_hint -o $setup_hint >> "$tmp_lftp_commands"
+            else
+                wget "$mirror/$setup_hint" --output-document "$setup_hint"
+            fi
+        fi
+    done
+    if test $use_lftp -eq 1
+    then
+        lftp -f "$tmp_lftp_commands"
+        if test $debug -eq 0
+        then
+            rm "$tmp_lftp_commands"
+        else
+            echo "DEBUG: lftp commands: $tmp_lftp_commands"
+        fi
+    fi
+    echo 'Done! Now you can run `genini` script'
+}
+
 function command_packageof
 {
     checkpackages
@@ -847,6 +894,7 @@ arch=""
 requirements=()
 ignore_md5_errors=""
 debug=0
+use_lftp=0
 
 # check apt-cyg dependencies
 check_dependencies
@@ -946,12 +994,17 @@ do
 		shift
 	;;
 
+    -L|--lftp)
+        use_lftp=1
+        shift
+    ;;
+
     -w|--wget-options)
         wget_options="$wget_options $2"
         shift; shift
     ;;
 
-    outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
+    outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove|makemirror)
       if test "-$command-" = "--"
       then
         command=$1
@@ -978,7 +1031,7 @@ fill_packages "$file" "$packages_category" 1
 
 case "$command" in
 
-  outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
+  outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove|makemirror)
       # execute an appropriate function
       command_$command
   ;;
