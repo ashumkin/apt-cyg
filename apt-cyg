@@ -142,9 +142,9 @@ function findworkspace()
 
   echo Working directory is $cache
   echo Mirror is $mirror
-  if mkdir -p "$cache/$mirrordir"
+  if mkdir -p "$cache/$mirrordir/$arch"
   then
-      cd "$cache/$mirrordir"
+      cd "$cache/$mirrordir/$arch"
   else
       echo Cannot create cache dir. Exiting... >&2
       exit 1
@@ -394,7 +394,7 @@ function download_package()
       exit 1
     fi
 
-    local pkg_dir=$(dirname "$install")
+    local pkg_dir=$(dirname "${install#$arch/}")
     # downloaded_file is used later outside
     downloaded_file=$(basename "$install")
     mkdir -p "$pkg_dir"
@@ -751,7 +751,7 @@ function command_makemirror
 {
     findworkspace
     # find all packages
-    package_dirs=$(find $arch -iname '*.*z*' \
+    package_dirs=$(cd .. && find $arch -iname '*.*z*' \
         | while read package
         do
             echo $(dirname "$package")
@@ -775,7 +775,7 @@ function command_makemirror
             then
                 echo get $setup_hint -o $setup_hint >> "$tmp_lftp_commands"
             else
-                wget "$mirror/$setup_hint" --output-document "$setup_hint"
+                wget ${wget_options//--no-clobber} "$mirror/$setup_hint" --output-document "../$setup_hint"
             fi
         fi
     done
